@@ -26,28 +26,104 @@
 # 
 # checker, documentation generator and linter directives and suppresors
 # shellcheck shell=sh
+# 
 # @file mshar
+# @name MShar
 # @author MXPSQL
 # @brief My version of the shar archiver
 # @description
-# 		MXPSQL's version of the shell archiver
-# 		It's better than shar
-# 		You need the base64 command to use this
-
-# Hello
-echo "MShar: MXPSQL's version of the Shell archiver";
+# 		MXPSQL's version of the shell archiver,
+# 		It's better than shar,
+# 		You need the base64 command to use this.
 
 # set some vars
 REPO_URL="https://github.com/MOALib/mshar";
 RAW_URL="https://raw.githubusercontent.com/MOALib/mshar/master/mshar";
 
+# functions
+
+# @brief make mshar archive
+#
+# @arg $1 the file to archive
+# @arg $@ so on the file to be archived
+#
+# @stdout it's pretty chatty, and there is no stderr, you can just redirect it to /dev/null to mute messages
+#
+# @exitcode 0 if success
+# @exitcode 1 if failure
+# @return exitcode, the archive and stdout messages
+#
+# @description
+# 		make mshar archive
+# 
+# @example
+# 		mshar archive file1 file2 file3
+mkmshar(){
+	AR2="$1";
+	if [ -z "$AR2" ]; then
+		echo "MShar mkmshar: No archive name given";
+		return 1;
+	fi;
+	# first part
+	{
+		echo "#!/bin/sh"; # make it executable with a shebang
+		echo "";
+		echo "# This archive is created using mshar, MXPSQL's version of the Shell archiver";
+		echo "# You need a unix bourne shell and the base64 command to extract this";
+		echo "TEKTONE=;"; # TEKTONE because why not and free reference to tektone (a company)
+		echo "TTk=;"; # TTk
+		echo "";
+		echo "echo \"This archive is created with MShar (MXPSQL's version of the Shell archiver)\"";
+		echo "if ! command -v base64 >/dev/null 2>&1; then";
+		echo "	echo \"Error: base64 command not found, it is required to extract the archive you loser.\";";
+		echo "	exit 1;";
+		echo "fi";
+		echo "";
+	} > "$AR2";
+
+	# main part
+	for i in "$@"; 
+	do
+		# notification
+		echo "a - $i";
+
+		# archive building
+		# shellcheck disable=SC2016 # we don't need expansion there, we need it to be unexpanded for the shell script
+		{
+			echo "TEKTONE='$i';";
+			echo "mkdir ./\$(dirname \"\$TEKTONE\") 2> /dev/null;";
+			echo 'echo "x - ./$TEKTONE";';
+			echo "printf '$(base64 "$i")' > \"./\$TEKTONE\";";
+			echo "tmp=\$(mktemp);";
+			echo "base64 -d \"./\$TEKTONE\" > \"\$tmp\";";
+			echo "mv \"\$tmp\" \"./\$TEKTONE\";";
+			echo "tmp=;";
+
+			# separator
+			echo "";
+		} >> "$AR2";
+	done;
+
+	# footer
+	{
+		echo "# This is a shell archive lol, created with mshar (MXPSQL's version of the Shell archiver)";
+		echo "exit 0;";
+	} >> "$AR2";
+
+	# make the archive executable and add all sort of permissions lol.
+	echo "Making archive executable."; chmod au+xwr "$AR2"; echo "Done making archive executable.";
+
+	return 0;
+}
+
 # set operation
 OP="$1";
 shift;
 
-# get the name of the archive
-AR="$1";
-shift;
+if ! test "$OP" = "noop"; then
+	# Hello
+	echo "MShar: MXPSQL's version of the Shell archiver";
+fi
 
 # check if $AR is defined
 if test -z "$OP"; then
@@ -55,6 +131,7 @@ if test -z "$OP"; then
 	echo "		<mode> is one of the following:";
 	echo "			make-archive";
 	echo "			update-self";
+	echo "			noop";
 	echo "";
 	echo "		make-archive mode:";
 	echo "			create your archive";
@@ -63,6 +140,9 @@ if test -z "$OP"; then
 	echo "				<file> is the name of the file to add to the archive, add as much as you want";
 	echo "		update-self mode:";
 	echo "			updates the script itself";
+	echo "			args after the mode argument: none";
+	echo "		noop mode:";
+	echo "			does nothing, useful if you want to source the script";
 	echo "			args after the mode argument: none";
 	exit 1;
 fi
@@ -74,56 +154,15 @@ if test "$OP" = "make-archive"; then
 		exit 1;
 	fi
 
+	# get the name of the archive
+	AR="$1";
+	shift;
+
 	# check if $AR is defined
 	if test -z "$AR"; then
 		echo "Usage: $(basename "$0") $OP <archive> [<file> ...]";
 	else
-		# first part
-		{
-			echo "#!/bin/sh"; # make it executable with a shebang
-			echo "";
-			echo "# This archive is created using mshar, MXPSQL's version of the Shell archiver";
-			echo "# You need a unix bourne shell and the base64 command to extract this";
-			echo "TEKTONE=;"; # TEKTONE because why not and free reference to tektone (a company)
-			echo "TTk=;"; # TTk
-			echo "";
-			echo "echo \"This archive is created with MShar (MXPSQL's version of the Shell archiver)\"";
-			echo "if ! command -v base64 >/devnull 2>&1; then";
-			echo "	echo \"Error: base64 command not found, it is required to extract the archive you loser.\";";
-			echo "	exit 1;";
-			echo "fi";
-			echo "";
-		} > "$AR";
-
-		# main part
-		for i in "$@"; 
-		do
-			# notification
-			echo "a - $i";
-
-			# archive building
-			# shellcheck disable=SC2016 # we don't need expansion there, we need it to be unexpanded for the shell script
-			{
-				echo "TEKTONE='$i';";
-				echo "mkdir ./\$(dirname \"\$TEKTONE\") 2> /dev/null;";
-				echo 'echo "x - ./$TEKTONE";';
-				echo "printf '$(base64 "$i")' > \"./\$TEKTONE\";";
-				echo "tmp=\$(mktemp);";
-				echo "base64 -d \"./\$TEKTONE\" > \"\$tmp\";";
-				echo "mv \"\$tmp\" \"./\$TEKTONE\";";
-				echo "tmp=;";
-
-				# separator
-				echo "";
-			} >> "$AR";
-		done;
-
-		# footer
-		echo "# This is a shell archive lol, created with mshar (MXPSQL's version of the Shell archiver)" >> "$AR";
-		echo "exit 0;" >> "$AR";
-
-		# make the archive executable and add all sort of permissions lol.
-		echo "Making archive executable."; chmod au+xwr "$AR"; echo "Done making archive executable.";
+		mkmshar "$AR" "$@";
 	fi
 
 	echo "Archive created. Archiving job done.";
@@ -145,14 +184,18 @@ elif test "$OP" = "update-self"; then
 	fi
 
 	echo "Done updating self.";
+elif test "$OP" = "noop"; then
+	:
 else
 	echo "Invalid operation.";
 fi
 
-# done doing whatever you want
-echo "Done running.";
+if ! test "$OP" = "noop"; then
+	# done doing whatever you want
+	echo "Done running.";
 
-# exit
-exit 0;
+	# exit
+	exit 0;
+fi
 
 # EOF

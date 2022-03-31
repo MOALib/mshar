@@ -1,5 +1,5 @@
 .\" Manpage for mshar.
-.TH man 8 "31 March 2022" "No Version It's a rolling release" "mshar man page"
+.TH man 7 "31 March 2022" "No Version It's a rolling release" "mshar man page"
 .SH NAME
 mshar \- MXPSQL's version of the shell archiver (shar)
 
@@ -10,12 +10,23 @@ mshar update-self
 
 mshar make-archive yourarchive.mshar yourcode.cpp nintendogames.tar.gz mariokartwii.iso
 
+mshar noop
+
+The texinfo document will be maintained more than the man page
+
 .SH DESCRIPTION
 A better shell archiver that needs base64 to run lmao
 
 It will output a shell script that will extract itself.
 
 Can self update itself (if you have git and the place where it is located is actually a git repository)
+
+Includes an api that you can use, to use it, 
+use the command "source /path/to/mshar noop" to silence output, then use the mkmshar api. 
+
+mkshar api: mkshar /path/to/archive /your/wanted/files /princess/peach/pics /nuclear/missle/codes
+
+Shdoc has better documentation than this man page, get it at https://github.com/reconquest/shdoc
 
 .SH OPTIONS
 mshar <mode> [whatever]
@@ -26,6 +37,8 @@ Modes:
 	update-self (only work if you git cloned it): no args
 
 	make-archive: <archive file> [<your file> ...]
+
+	noop: does nothing (useful for sourcing)
 
 .SH BUGS
 No known bugs lol
