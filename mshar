@@ -1,0 +1,160 @@
+#!/bin/env sh
+# mshar -- MXPSQL's version of the Shell archiver
+# It's better than shar
+# 
+# MIT License
+# 
+# Copyright (c) 2022 MXPSQL
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# 
+# checker, documentation generator and linter directives and suppresors
+# shellcheck shell=sh
+# @file mshar
+# @author MXPSQL
+# @brief My version of the shar archiver
+# @description
+# 		MXPSQL's version of the shell archiver
+# 		It's better than shar
+# 		You need the base64 command to use this
+
+# Hello
+echo "MShar: MXPSQL's version of the Shell archiver";
+
+# set some vars
+UPDATE_URL="https://raw.githubusercontent.com/MXPSQL/mshar/master/mshar";
+
+# set operation
+OP="$1";
+shift;
+
+# get the name of the archive
+AR="$1";
+shift;
+
+# check if $AR is defined
+if test -z "$OP"; then
+	echo "Usage: $(basename "$0") <mode>";
+	echo "		<mode> is one of the following:";
+	echo "			make-archive";
+	echo "			update-self";
+	echo "";
+	echo "		make-archive mode:";
+	echo "			create your archive";
+	echo "			args after the mode argument: <archive> [<file> ...]";
+	echo "				<archive> is the name of the archive";
+	echo "				<file> is the name of the file to add to the archive, add as much as you want";
+	echo "		update-self mode:";
+	echo "			updates the script itself";
+	echo "			args after the mode argument: none";
+	exit 1;
+fi
+
+if test "$OP" = "make-archive"; then
+	# check if base64 command is available
+	if ! command -v base64 >/dev/null 2>&1; then
+		echo "Error: base64 command not found, it is required to build the archive you loser.";
+		exit 1;
+	fi
+
+	# check if $AR is defined
+	if test -z "$AR"; then
+		echo "Usage: $(basename "$0") $OP <archive> [<file> ...]";
+	else
+		# first part
+		{
+			echo "#!/bin/sh"; # make it executable with a shebang
+			echo "";
+			echo "# This archive is created using mshar, MXPSQL's version of the Shell archiver";
+			echo "# You need a unix bourne shell and the base64 command to extract this";
+			echo "TEKTONE=;"; # TEKTONE because why not and free reference to tektone (a company)
+			echo "TTk=;"; # TTk
+			echo "";
+			echo "echo \"This archive is created with MShar (MXPSQL's version of the Shell archiver)\"";
+			echo "if ! command -v base64 >/devnull 2>&1; then";
+			echo "	echo \"Error: base64 command not found, it is required to extract the archive you loser.\";";
+			echo "	exit 1;";
+			echo "fi";
+			echo "";
+		} > "$AR";
+
+		# main part
+		for i in "$@"; 
+		do
+			# notification
+			echo "a - $i";
+
+			# archive building
+			# shellcheck disable=SC2016 # we don't need expansion there, we need it to be unexpanded for the shell script
+			{
+				echo "TEKTONE='$i';";
+				echo "mkdir ./\$(dirname \"\$TEKTONE\") 2> /dev/null;";
+				echo 'echo "x - ./$TEKTONE";';
+				echo "printf '$(base64 "$i")' > \"./\$TEKTONE\";";
+				echo "tmp=\$(mktemp);";
+				echo "base64 -d \"./\$TEKTONE\" > \"\$tmp\";";
+				echo "mv \"\$tmp\" \"./\$TEKTONE\";";
+				echo "tmp=;";
+
+				# separator
+				echo "";
+			} >> "$AR";
+		done;
+
+		# footer
+		echo "# This is a shell archive lol" >> "$AR";
+		echo "exit 0;" >> "$AR";
+
+		# make the archive executable and add all sort of permissions lol.
+		echo "Making archive executable."; chmod au+xwr "$AR"; echo "Done making archive executable.";
+	fi
+
+	echo "Archive created. Archiving job done.";
+elif test "$OP" = "update-self"; then
+	echo "Updating self";
+	# try to use git, wget or curl
+
+	# check if git is available and the directory is a git repository
+	if command -v git >/dev/null 2>&1 && test -d .git; then
+		echo "Using git to update self.";
+		git pull;
+		echo "Done updating self.";
+	elif command -v wget >/dev/null 2>&1; then
+		echo "Either git is not installed or this directory is not a git repository. Using wget to update self.";
+		wget -O "$0" "$UPDATE_URL";
+		echo "Done updating self.";
+	elif command -v curl >/dev/null 2>&1; then
+		echo "Wget is not installed. Using curl to update self.";
+		curl -o "$0" "$UPDATE_URL";
+		echo "Done updating self.";
+	else
+		echo "Error: git, wget or curl not found, you need one of those to update the script.";
+		echo "To update, please download the script from $UPDATE_URL and run it.";
+	fi
+else
+	echo "Invalid operation.";
+fi
+
+# done doing whatever you want
+echo "Done running.";
+
+# exit
+exit 0;
+
+# EOF
