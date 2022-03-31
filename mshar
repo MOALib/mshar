@@ -131,7 +131,7 @@ elif test "$OP" = "update-self"; then
 
 	if command -v git >/dev/null 2>&1 && test -d .git; then
 		echo "Using git to update self.";
-		git pull;
+		git pull origin master;
 		echo "Done updating self.";
 	else
 		echo "Error: git not found or the installation directory is not a git directory, you need git to update the script.";
