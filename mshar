@@ -119,7 +119,7 @@ if test "$OP" = "make-archive"; then
 		done;
 
 		# footer
-		echo "# This is a shell archive lol" >> "$AR";
+		echo "# This is a shell archive lol, created with mshar (MXPSQL's version of the Shell archiver)" >> "$AR";
 		echo "exit 0;" >> "$AR";
 
 		# make the archive executable and add all sort of permissions lol.
