@@ -39,6 +39,7 @@ echo "MShar: MXPSQL's version of the Shell archiver";
 
 # set some vars
 REPO_URL="https://github.com/MOALib/mshar";
+RAW_URL="https://raw.githubusercontent.com/MOALib/mshar/master/mshar";
 
 # set operation
 OP="$1";
@@ -132,11 +133,18 @@ elif test "$OP" = "update-self"; then
 	if command -v git >/dev/null 2>&1 && test -d .git; then
 		echo "Using git to update self.";
 		git pull origin master;
-		echo "Done updating self.";
+	elif command -v wget >/dev/null 2>&1; then
+		echo "Using wget to update self.";
+		wget -O "$0" "$RAW_URL";
+	elif command curl >/dev/null 2>&1; then
+		echo "Using curl to update self.";
+		curl -o "$0" "$RAW_URL";
 	else
 		echo "Error: git not found or the installation directory is not a git directory, you need git to update the script.";
-		echo "To update, please download the script from $REPO_URL and run it.";
+		echo "To update, please download the script from $REPO_URL and run it or get from $RAW_URL and download it.";
 	fi
+
+	echo "Done updating self.";
 else
 	echo "Invalid operation.";
 fi
