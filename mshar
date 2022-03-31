@@ -38,7 +38,7 @@
 echo "MShar: MXPSQL's version of the Shell archiver";
 
 # set some vars
-UPDATE_URL="https://raw.githubusercontent.com/MXPSQL/mshar/master/mshar";
+REPO_URL="https://github.com/MOALib/mshar";
 
 # set operation
 OP="$1";
@@ -128,24 +128,14 @@ if test "$OP" = "make-archive"; then
 	echo "Archive created. Archiving job done.";
 elif test "$OP" = "update-self"; then
 	echo "Updating self";
-	# try to use git, wget or curl
 
-	# check if git is available and the directory is a git repository
 	if command -v git >/dev/null 2>&1 && test -d .git; then
 		echo "Using git to update self.";
 		git pull;
 		echo "Done updating self.";
-	elif command -v wget >/dev/null 2>&1; then
-		echo "Either git is not installed or this directory is not a git repository. Using wget to update self.";
-		wget -O "$0" "$UPDATE_URL";
-		echo "Done updating self.";
-	elif command -v curl >/dev/null 2>&1; then
-		echo "Wget is not installed. Using curl to update self.";
-		curl -o "$0" "$UPDATE_URL";
-		echo "Done updating self.";
 	else
-		echo "Error: git, wget or curl not found, you need one of those to update the script.";
-		echo "To update, please download the script from $UPDATE_URL and run it.";
+		echo "Error: git not found or the installation directory is not a git directory, you need git to update the script.";
+		echo "To update, please download the script from $REPO_URL and run it.";
 	fi
 else
 	echo "Invalid operation.";

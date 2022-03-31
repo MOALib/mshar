@@ -1,0 +1,34 @@
+.\" Manpage for mshar.
+.TH man 8 "31 March 2022" "No Version It's a rolling release" "mshar man page"
+.SH NAME
+mshar \- MXPSQL's version of the shell archiver (shar)
+
+.SH SYNOPSIS
+mshar <mode> [whatever depending on the mode]
+
+mshar update-self
+
+mshar make-archive yourarchive.mshar yourcode.cpp nintendogames.tar.gz mariokartwii.iso
+
+.SH DESCRIPTION
+A better shell archiver that needs base64 to run lmao
+
+It will output a shell script that will extract itself.
+
+Can self update itself (if you have git and the place where it is located is actually a git repository)
+
+.SH OPTIONS
+mshar <mode> [whatever]
+Modes:
+
+	all of these args are after the mode args
+
+	update-self (only work if you git cloned it): no args
+
+	make-archive: <archive file> [<your file> ...]
+
+.SH BUGS
+No known bugs lol
+
+.SH AUTHOR
+MXPSQL (I am not telling you my real name)
