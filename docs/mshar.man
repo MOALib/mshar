@@ -12,7 +12,7 @@ mshar make-archive yourarchive.mshar yourcode.cpp nintendogames.tar.gz mariokart
 
 mshar noop
 
-The texinfo document will be maintained more than the man page
+The texinfo document will be maintained more than the man page, although I will try to maintain this page
 
 .SH DESCRIPTION
 A better shell archiver that needs base64 to run lmao

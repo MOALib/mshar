@@ -47,6 +47,7 @@ This manual is for MShar.
 @menu
 * MShar docs::    Main documentation
 * MShar hacking:: Modifying MShar
+* Race Traitors:: You R Pretendo, not Nintendo
 @end menu
 
 @comment main stuff
@@ -96,6 +97,22 @@ This manual is for MShar.
 
     	noop: does nothing (useful for sourcing)
 
+    @node API
+    @section API
+    after sourcing (perferably with the noop mode),
+    you can use the mkmshar function to create archives
+
+    Usage: 
+    mkmshar archive /stuff/yes /others/image /majin/sonic /sanic/hegehog
+
+    @node Extraction
+    @section Extraction
+
+    Run the archive as a bourne shell script. Make sure you have
+    the base64 command.
+
+    Run it in a directory, it will extract to the current directory.
+
     @node bugs?
     @section bugs?
     No bugs at all
@@ -105,11 +122,28 @@ This manual is for MShar.
     MXPSQL is the author
 
 @node MShar hacking
-    @section Modifying MShar
+    @chapter Modifying MShar
     @cindex MShar hacking
+
+    @node Modifying the thing
+    @section Modifying the thing
     To modify mshar, just modify the mshar script, it's a shell script.
 
     All you need to know are shell script knowledge.
+
+    @node Sending the modification
+    @section Sending the modification
+    You can send your modification as a patch file, use the patchutils and figure out how to use it and send it to me.
+
+    Hint: diff
+
+@comment useless
+
+@node Race Traitors
+    @chapter Race Traitors
+    @cindex Race Traitors
+
+    Yes, Ok
 
 
 @comment index
