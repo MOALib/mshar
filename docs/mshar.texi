@@ -1,6 +1,10 @@
 \input texinfo
 @settitle MShar 0.0
 
+@comment cc0
+@comment CC0
+@comment To the extent possible under law, MXPSQL has waived all copyright and related or neighboring rights to Documentation for MShar. This work is published from: Indonesia.
+
 @copying
 MShar is licensed under:
 

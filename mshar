@@ -65,6 +65,8 @@ mkmshar(){
 		return 1;
 	fi;
 
+	shift;
+
 	# check if base64 command is available
 	if ! command -v base64 >/dev/null 2>&1; then
 		echo "Error: base64 command not found, it is required to build the archive you loser.";

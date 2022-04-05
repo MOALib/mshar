@@ -1,4 +1,8 @@
 .\" Manpage for mshar.
+.\" 
+.\" CC0
+.\" To the extent possible under law, MXPSQL has waived all copyright and related or neighboring rights to Documentation for MShar. This work is published from: Indonesia.
+
 .TH man 7 "31 March 2022" "No Version It's a rolling release" "mshar man page"
 .SH NAME
 mshar \- MXPSQL's version of the shell archiver (shar)
