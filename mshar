@@ -60,7 +60,7 @@ RAW_URL="https://raw.githubusercontent.com/MOALib/mshar/master/mshar";
 # 		mshar archive file1 file2 file3
 mkmshar(){
 	AR2="$1";
-	if [ -z "$AR2" ]; then
+	if test -z "$AR2"; then
 		echo "MShar mkmshar: No archive name given";
 		return 1;
 	fi;
@@ -70,7 +70,7 @@ mkmshar(){
 	# check if base64 command is available
 	if ! command -v base64 >/dev/null 2>&1; then
 		echo "Error: base64 command not found, it is required to build the archive you loser.";
-		exit 1;
+		return 1;
 	fi
 
 	# first part
@@ -141,6 +141,8 @@ if test -z "$MSHAR_NOOP"; then
 		echo "		<mode> is one of the following:";
 		echo "			make-archive";
 		echo "			update-self";
+		echo "			version";
+		echo "			help";
 		echo "";
 		echo "		make-archive mode:";
 		echo "			create your archive";
@@ -149,6 +151,12 @@ if test -z "$MSHAR_NOOP"; then
 		echo "				<file> is the name of the file to add to the archive, add as much as you want";
 		echo "		update-self mode:";
 		echo "			updates the script itself";
+		echo "			args after the mode argument: none";
+		echo "		version mode:";
+		echo "			prints the version";
+		echo "			args after the mode argument: none";
+		echo "		help mode:";
+		echo "			ask you to run mshar without any args";
 		echo "			args after the mode argument: none";
 		echo "";
 		echo "To noop, export or define the variable MSHAR_NOOP";
@@ -168,6 +176,7 @@ if test -z "$MSHAR_NOOP"; then
 			echo "Usage: $(basename "$0") $OP <archive> [<file> ...]";
 		else
 			mkmshar "$AR" "$@";
+			printf "\a";
 		fi
 
 		echo "Archive created. Archiving job done.";
@@ -189,6 +198,10 @@ if test -z "$MSHAR_NOOP"; then
 		fi
 
 		echo "Done updating self.";
+	elif test "$OP" = "version"; then
+		echo "It's rolling release, there is no version";
+	elif test "$OP" = "help"; then
+		echo "run $0 without any arguments the next time for help";
 	else
 		echo "Invalid operation.";
 	fi

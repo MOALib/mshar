@@ -6,7 +6,7 @@ make mshar archive
 
 MXPSQL's version of the shell archiver,
 It's better than shar,
-You need the base64 command to use this.
+You need the base64 command.
 
 ## Index
 
