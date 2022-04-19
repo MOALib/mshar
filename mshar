@@ -45,6 +45,7 @@ RAW_URL="https://raw.githubusercontent.com/MOALib/mshar/master/mshar";
 # @brief make mshar archive
 #
 # @arg $1 the file to archive
+# @arg $2 the startup script, put // or - if you don't want a startup script
 # @arg $@ so on the file to be archived
 #
 # @stdout it's pretty chatty, and there is no stderr, you can just redirect it to /dev/null to mute messages
@@ -55,20 +56,48 @@ RAW_URL="https://raw.githubusercontent.com/MOALib/mshar/master/mshar";
 #
 # @description
 # 		make mshar archive
+#		this function is legacy
 # 
 # @example
-# 		mshar archive file1 file2 file3
+# 		mkmshar archive start.sh file1 file2 file3
+#		mkmshar archive // file1 file2 file3
+#		mkmshar archive - file1 file2 file3
 mkmshar(){
+	
 	AR2="$1";
 	if test -z "$AR2"; then
-		echo "MShar mkmshar: No archive name given";
+		echo "MShar mkmshar: No archive name given.";
+		echo "Usage: mkmshar [archive name] [startup script] files to archive ...";
+		echo "Example: mkmshar archive.mshar script.sh file1 file2 file3";
 		return 1;
 	fi;
 
+	START_SCRIPT2="$2";
+	if test "$START_SCRIPT2" != "//" || test "$START_SCRIPT2" != "-"; then
+		if test -z "$START_SCRIPT2"; then
+			echo "MShar mkmshar: No startup script given.";
+			echo "Usage: mkmshar [archive name] [startup script] files to archive ...";
+			echo "Example: mkmshar archive.mshar script.sh file1 file2 file3 # startup script";
+			echo "";
+			echo "Examples with no startup script"
+			echo "mkmshar archive.mshar // file1 file2 file3 # no startup script";
+			echo "mkmshar archive.mshar - file1 file2 file3 # no startup script";
+			return 1;
+		fi;
+
+		test -f "$START_SCRIPT2" || {
+			echo "mkmshar: file $START_SCRIPT2 does not exist";
+			return 1;
+		}
+	fi;
+
+	shift;
 	shift;
 
+	BAS64="$(find . /bin /usr/bin /usr/local/bin -name base64* -type f | head -n 1)";
+
 	# check if base64 command is available
-	if ! command -v base64 >/dev/null 2>&1; then
+	if ! command -v "$BAS64" >/dev/null 2>&1; then
 		echo "Error: base64 command not found, it is required to build the archive you loser.";
 		return 1;
 	fi
@@ -80,7 +109,101 @@ mkmshar(){
 		echo "# This archive is created using mshar, MXPSQL's version of the Shell archiver";
 		echo "# You need a unix bourne shell and the base64 command to extract this";
 		echo "TEKTONE=;"; # TEKTONE because why not and free reference to tektone (a company)
-		echo "TTk=;"; # TTk
+		echo "TTk=\"\$(find . /bin /usr/bin /usr/local/bin -name base64* -type f | head -n 1)\";"; # TTk
+		echo "";
+		echo "echo \"This archive is created with MShar (MXPSQL's version of the Shell archiver)\"";
+		echo "if ! command -v base64 >/dev/null 2>&1; then";
+		echo "	echo \"Error: base64 command not found, it is required to extract the archive you loser.\";";
+		echo "	exit 1;";
+		echo "fi";
+		echo "";
+
+	} > "$AR2";
+
+	if test "$START_SCRIPT2" != "//" || test "$START_SCRIPT2" != "-"; then
+		cat "$START_SCRIPT2" >> "$AR2";
+	fi
+
+	# main part
+	for i in "$@"; 
+	do
+		# notification
+		echo "a - $i";
+
+		# archive building
+		# shellcheck disable=SC2016 # we don't need expansion there, we need it to be unexpanded for the shell script
+		{
+			echo "TEKTONE='$i';";
+			echo "mkdir ./\$(dirname \"\$TEKTONE\") 2> /dev/null;";
+			echo 'echo "x - ./$TEKTONE";';
+			echo "printf '$("$BAS64" "$i")' > \"./\$TEKTONE\";";
+			echo "tmp=\$(mktemp);";
+			echo "\$TTk -d \"./\$TEKTONE\" > \"\$tmp\";";
+			echo "mv \"\$tmp\" \"./\$TEKTONE\";";
+			echo "tmp=;";
+
+			# separator
+			echo "";
+		} >> "$AR2";
+	done;
+
+	# footer
+	{
+		echo "# This is a shell archive lol, created with mshar (MXPSQL's version of the Shell archiver)";
+		echo "exit 0;";
+	} >> "$AR2";
+
+	# make the archive executable and add all sort of permissions lol.
+	echo "Making archive executable."; chmod au+xwr "$AR2"; echo "Done making archive executable.";
+
+	return 0;
+}
+
+# @brief make legacy mshar archive
+#
+# @arg $1 the file to archive
+# @arg $@ so on the file to be archived
+#
+# @stdout it's pretty chatty, and there is no stderr, you can just redirect it to /dev/null to mute messages
+#
+# @exitcode 0 if success
+# @exitcode 1 if failure
+# @return exitcode, the archive and stdout messages
+#
+# @description
+# 		make mshar archive
+#		this function is legacy
+# 
+# @example
+# 		mshar_legacy archive file1 file2 file3
+mkmshar_legacy(){
+	AR2="$1";
+	if test -z "$AR2"; then
+		echo "MShar mkmshar_legacy: No archive name given";
+		echo "Usage: mkmshar_legacy [archive name] [files to archive, ...]";
+		echo "Example: mkmshar_legacy archive.mshar file1 file2 file3";
+		return 1;
+	fi;
+
+	shift;
+
+	# TARX=$(find . /bin /usr/bin /usr/local/bin -name tar* -type f | head -n 1);
+	BAS64="$(find . /bin /usr/bin /usr/local/bin -name base64* -type f | head -n 1)";
+
+	# check if base64 command is available
+	if ! command -v "$BAS64" >/dev/null 2>&1; then
+		echo "Error: base64 command not found, it is required to build the archive you loser.";
+		return 1;
+	fi
+
+	# first part
+	{
+		echo "#!/bin/sh"; # make it executable with a shebang
+		echo "";
+		echo "# This archive is created using mshar, MXPSQL's version of the Shell archiver";
+		echo "# You need a unix bourne shell and the base64 command to extract this";
+		echo "TEKTONE=;"; # TEKTONE because why not and free reference to tektone (a company)
+		echo "TTk=\"\$(find . /bin /usr/bin /usr/local/bin -name base64* -type f | head -n 1)\";"; # TTk
 		echo "";
 		echo "echo \"This archive is created with MShar (MXPSQL's version of the Shell archiver)\"";
 		echo "if ! command -v base64 >/dev/null 2>&1; then";
@@ -102,9 +225,9 @@ mkmshar(){
 			echo "TEKTONE='$i';";
 			echo "mkdir ./\$(dirname \"\$TEKTONE\") 2> /dev/null;";
 			echo 'echo "x - ./$TEKTONE";';
-			echo "printf '$(base64 "$i")' > \"./\$TEKTONE\";";
+			echo "printf '$("$BAS64" "$i")' > \"./\$TEKTONE\";";
 			echo "tmp=\$(mktemp);";
-			echo "base64 -d \"./\$TEKTONE\" > \"\$tmp\";";
+			echo "\$TTk -d \"./\$TEKTONE\" > \"\$tmp\";";
 			echo "mv \"\$tmp\" \"./\$TEKTONE\";";
 			echo "tmp=;";
 
@@ -143,10 +266,11 @@ if test -z "$MSHAR_NOOP"; then
 		echo "			update-self";
 		echo "			version";
 		echo "			help";
+		echo "			noop";
 		echo "";
 		echo "		make-archive mode:";
 		echo "			create your archive";
-		echo "			args after the mode argument: <archive> [<file> ...]";
+		echo "			args after the mode argument: <archive> <startup script> [<file> ...]";
 		echo "				<archive> is the name of the archive";
 		echo "				<file> is the name of the file to add to the archive, add as much as you want";
 		echo "		update-self mode:";
@@ -158,8 +282,10 @@ if test -z "$MSHAR_NOOP"; then
 		echo "		help mode:";
 		echo "			ask you to run mshar without any args";
 		echo "			args after the mode argument: none";
+		echo "		noop mode:";
+		echo "			does nothing, useful for sourcing (the only way)";
+		echo "			args after the mode argument: none (does not even process it)";
 		echo "";
-		echo "To noop, export or define the variable MSHAR_NOOP";
 		exit 1;
 	fi
 
@@ -169,17 +295,25 @@ if test -z "$MSHAR_NOOP"; then
 
 		# get the name of the archive
 		AR="$1";
+		START_SCRIPT="$2";
+		shift;
 		shift;
 
 		# check if $AR is defined
 		if test -z "$AR"; then
-			echo "Usage: $(basename "$0") $OP <archive> [<file> ...]";
-		else
-			mkmshar "$AR" "$@";
-			printf "\a";
-		fi
+			echo "Usage: $(basename "$0") $OP <archive> <startup script> [<file> ...]";
+		elif test "$START_SCRIPT" != "//"; then
+			if test "$START_SCRIPT" != "-"; then
+				if test -z "$START_SCRIPT"; then
+					echo "Usage: $(basename "$0") $OP <archive> <startup script> [<file> ...]";
+					echo "If you don't want a startup script, use // or -";
+				fi;
+			fi;
+		fi;
 
-		echo "Archive created. Archiving job done.";
+		mkmshar "$AR" "$START_SCRIPT" "$@" && echo "Archive created. Archiving job done." || echo "Archiving failed.";
+		printf "\a";
+
 	elif test "$OP" = "update-self"; then
 		echo "Updating self";
 

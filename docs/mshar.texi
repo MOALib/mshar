@@ -1,13 +1,11 @@
 \input texinfo
-@settitle MShar 0.0
+@settitle MShar 0.0-Rolling-Release
 
 @comment cc0
 @comment CC0
 @comment To the extent possible under law, MXPSQL has waived all copyright and related or neighboring rights to Documentation for MShar. This work is published from: Indonesia.
 
 @copying
-MShar is licensed under:
-
 MIT License
 
 Copyright (c) 2022 MXPSQL
@@ -35,10 +33,10 @@ SOFTWARE.
 @comment needed
 
 @titlepage
-@title MShar
-@page
-@vskip 0pt plus 1filll
-@insertcopying
+    @title MShar
+    @page
+    @vskip 0pt plus 1filll
+    @insertcopying
 @end titlepage
 
 @contents
@@ -51,11 +49,10 @@ This manual is for MShar.
 @menu
 * MShar docs::    Main documentation
 * MShar hacking:: Modifying MShar
-* Race Traitors:: You R Pretendo, not Nintendo
+* MShar License:: The License for MShar
 @end menu
 
 @comment main stuff
-
 @node MShar docs
     @chapter MShar
 
@@ -101,13 +98,19 @@ This manual is for MShar.
 
     	noop: does nothing (useful for sourcing)
 
+        version: prints the version (there is none, it's rolling release)
+
+        help: ask you to run mshar with no arguments
+
     @node API
     @section API
     after sourcing (perferably with the noop mode),
-    you can use the mkmshar function to create archives
+    you can use the mkmshar and mkmshar_legacy function to create archives
 
     Usage: 
-    mkmshar archive /stuff/yes /others/image /majin/sonic /sanic/hegehog
+    mkmshar_legacy archive /stuff/yes /others/image /majin/sonic /sanic/hegehog
+
+    mkmshar archive startup_script.sh /stuff/yes /others/image /majin/sonic /sanic/hegehog
 
     @node Extraction
     @section Extraction
@@ -139,19 +142,15 @@ This manual is for MShar.
     @section Sending the modification
     You can send your modification as a patch file, use the patchutils and figure out how to use it and send it to me.
 
+    You can do a pull request (recommended).
+
     Hint: diff
 
-@comment useless
-
-@node Race Traitors
-    @chapter Race Traitors
-    @cindex Race Traitors
-
-    Yes, Ok
-
+@comment license
+@node MShar License
+    @insertcopying
 
 @comment index
-
 @node Index
     @unnumbered Index
     @printindex cp

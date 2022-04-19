@@ -16,7 +16,7 @@ mshar make-archive yourarchive.mshar yourcode.cpp nintendogames.tar.gz mariokart
 
 mshar noop
 
-The texinfo document will be maintained more than the man page, although I will try to maintain this page
+The texinfo document will be maintained more than the man page
 
 .SH DESCRIPTION
 A better shell archiver that needs base64 to run lmao
@@ -25,12 +25,7 @@ It will output a shell script that will extract itself.
 
 Can self update itself (if you have git and the place where it is located is actually a git repository)
 
-Includes an api that you can use, to use it, 
-use the command "source /path/to/mshar noop" to silence output, then use the mkmshar api. 
-
-mkshar api: mkshar /path/to/archive /your/wanted/files /princess/peach/pics /nuclear/missle/codes
-
-Shdoc has better documentation than this man page, get it at https://github.com/reconquest/shdoc
+Contains an API for creating archives
 
 .SH OPTIONS
 mshar <mode> [whatever]
@@ -43,6 +38,10 @@ Modes:
 	make-archive: <archive file> [<your file> ...]
 
 	noop: does nothing (useful for sourcing)
+
+	version: gives you the Version
+
+	help: tells you to run mshar without args
 
 .SH BUGS
 No known bugs lol
