@@ -94,7 +94,7 @@ mkmshar(){
 	shift;
 	shift;
 
-	BAS64="$(find . /bin /usr/bin /usr/local/bin -name base64* -type f | head -n 1)";
+	BAS64="$(find /bin /usr/bin /usr/local/bin . -name base64* -type f | head -n 1)";
 
 	# check if base64 command is available
 	if ! command -v "$BAS64" >/dev/null 2>&1; then
@@ -109,7 +109,7 @@ mkmshar(){
 		echo "# This archive is created using mshar, MXPSQL's version of the Shell archiver";
 		echo "# You need a unix bourne shell and the base64 command to extract this";
 		echo "TEKTONE=;"; # TEKTONE because why not and free reference to tektone (a company)
-		echo "TTk=\"\$(find . /bin /usr/bin /usr/local/bin -name base64* -type f | head -n 1)\";"; # TTk
+		echo "TTk=\"\$(find /bin /usr/bin /usr/local/bin . -name base64* -type f | head -n 1)\";"; # TTk
 		echo "";
 		echo "echo \"This archive is created with MShar (MXPSQL's version of the Shell archiver)\"";
 		echo "if ! command -v base64 >/dev/null 2>&1; then";

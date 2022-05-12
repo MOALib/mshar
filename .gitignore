@@ -1,1 +1,4 @@
-mshar.html/
+sh/mshar.html/
+c/*.exe*
+c/html/
+c/a.s
