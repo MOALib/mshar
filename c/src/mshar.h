@@ -12,6 +12,9 @@
  * This is the documentation about the ANSI C implementation of MShar.
  */
 
+#ifndef MXPSQL_MShar_H
+#define MXPSQL_MShar_H
+
 #if defined(__cplusplus) || defined(c_plusplus)
 #include <cstdio>
 #include <cstddef>
@@ -24,9 +27,6 @@
 #include <string.h>
 #endif
 
-#ifndef MXPSQL_MShar_H
-#define MXPSQL_MShar_H
-
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
@@ -34,8 +34,9 @@ extern "C" {
 /**
  * Thanks https://github.com/skullchap/b64/blob/master/b64.h for the code.
  * It is licensed under the unlicense.
+ * Modified to support binary files (NUL character present in windows binaries, preventing it from working properly)
  */
-char* mkmshar_b64Encode(char *data)
+char* mkmshar_b64Encode(char *data, size_t inlen)
 {
     static const char b64e[] = {
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
@@ -47,14 +48,15 @@ char* mkmshar_b64Encode(char *data)
         'w', 'x', 'y', 'z', '0', '1', '2', '3',
         '4', '5', '6', '7', '8', '9', '+', '/'};
 
-    ssize_t inlen = strlen(data);
-    ssize_t outlen = ((((inlen) + 2) / 3) * 4);
+    size_t outlen = ((((inlen) + 2) / 3) * 4);
 
     char *out = (char*) malloc(outlen + 1);
     char *p;
-    ssize_t i;
+    size_t i;
 
-    if (out == NULL) return NULL;
+    if (out == NULL) {
+        return NULL;
+    }
     out[outlen] = '\0';
     p = out;
 
@@ -94,9 +96,10 @@ char* mkmshar_b64Encode(char *data)
  * @param postscript the script to run after extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
  * @param files the files to be archived
  * @param nfiles how many files to archive
+ * @param ignorefileerrors Ignore file errors and continue, set to 0 to not ignore
  * @return char* the archive or NULL if there is a problem
  */
-char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles){
+char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, int ignorefileerrors){
     register const size_t initarcfilesize = ((sizeof(char*)) * 1024);
     size_t i;
 
@@ -141,15 +144,63 @@ TTk=\"$(find /bin /usr/bin /usr/local/bin . -name base64* -type f 2> /dev/null |
         FILE* fptr = fopen(files[i], "rb");
         char* filecontent = NULL;
         if(fptr == NULL){
-            free(arcfile);
-            return NULL;
+            if(ignorefileerrors != 0){
+                continue;
+            }
+            else{
+                free(arcfile);
+                return NULL;
+            }
+        }
+
+        if(ferror(fptr)){
+            if(ignorefileerrors != 0){
+                continue;
+            }
+            else{
+                fclose(fptr);
+                free(arcfile);
+                return NULL;
+            }
         }
 
         /* Read until the end and get the size as C++ does not need to implement SEEK_END */
         {
-            while(fgetc(fptr) != EOF){;} /* this may seem hacky, but it is portable due to C++ not mandating to implement SEEK_END just like the comment before */
+            while(fgetc(fptr) != EOF){;} /* this may seem hacky and unsophisticated, but it is portable and sophisticated due to C++ not mandating to implement SEEK_END just like the comment before. 
+            All you do is read until you reach EOF, then get the file size and return to beginning. */
+            if(fseek(fptr, 0, SEEK_CUR) != 0){
+                if(ignorefileerrors != 0){
+                    continue;
+                }
+                else{
+                    fclose(fptr);
+                    free(arcfile);
+                    return NULL;
+                }
+            }
             fsize = ftell(fptr);
-            fseek(fptr, 0, SEEK_SET);
+            if(fseek(fptr, 0, SEEK_SET) != 0){
+                if(ignorefileerrors != 0){
+                    continue;
+                }
+                else{
+                    fclose(fptr);
+                    free(arcfile);
+                    return NULL;
+                }
+            }
+
+        }
+
+        if(ferror(fptr)){
+            if(ignorefileerrors != 0){
+                continue;
+            }
+            else{
+                fclose(fptr);
+                free(arcfile);
+                return NULL;
+            }
         }
 
         filecontent = (char*) malloc(fsize);
@@ -242,7 +293,7 @@ TTk=\"$(find /bin /usr/bin /usr/local/bin . -name base64* -type f 2> /dev/null |
                         return NULL;
                     }
 
-                    bas64 = mkmshar_b64Encode(filecontent);
+                    bas64 = mkmshar_b64Encode(filecontent, fsize);
 
                     if(bas64 == NULL){
                         bas64 = (char*) malloc(sizeof(char));

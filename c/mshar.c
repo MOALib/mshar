@@ -8,6 +8,7 @@ int main(int argc, char* argv[]){
     char* post_script = NULL;
     char** files = NULL;
     FILE* f = NULL;
+    char* script = NULL;
 
     /*
         usage: mshar [pre execution script] [post execution script] file1 file2 file3 file4 file5 file6 file7 file8 file9 ... > archive
@@ -15,8 +16,8 @@ int main(int argc, char* argv[]){
      */
 
     if(argc < 3){
-        printf("usage: %s [pre execution script] [post execution script] file1 file2 file3 file4 file5 file6 file7 file8 file9 ... > archive\n", argv[0]);
-        printf("Put - for [pre execution script] and [post execution script] to not use a script\n");
+        fprintf(stderr, "usage: %s [pre execution script] [post execution script] file1 file2 file3 file4 file5 file6 file7 file8 file9 ... > archive\n", argv[0]);
+        fprintf(stderr, "Put - for [pre execution script] and [post execution script] to not use a script\n");
         return 1;
     }
 
@@ -65,7 +66,16 @@ int main(int argc, char* argv[]){
         }
     }
 
-    printf("%s", mkmshar(pre_script, post_script, files, argc - 3));
+    script = mkmshar(pre_script, post_script, files, argc - 3, 1);
+    if(script == NULL){
+        fprintf(stderr, "Error creating script\n");
+        free(script);
+        return 1;
+    }
+    else{
+        fprintf(stdout, "%s", script);
+        free(script);
+    }
 
     return 0;
 }
