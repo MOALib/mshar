@@ -6,6 +6,7 @@
         "iterator": "c",
         "vector": "c",
         "locale.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "bitset": "c"
     }
 }

@@ -1,4 +1,5 @@
 sh/mshar.html/
-c/*.exe*
+c/*.exe
+c/*.exe.stackdump
 c/html/
 c/a.s

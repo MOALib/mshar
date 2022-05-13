@@ -5,7 +5,29 @@
  * @version 0 (rolling release)
  * @date 2022-05-12
  * 
- * @copyright Copyright (c) 2022 MXPSQL, under the MIT License
+ * @copyright 
+ * MIT License
+ * 
+ * Copyright (c) 2022 MXPSQL
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * 
  * 
  * @mainpage ANSI C Implementation of MShar
  * 
@@ -36,6 +58,53 @@ extern "C" {
  * It is licensed under the unlicense.
  * Modified to support binary files (NUL character present in windows binaries, preventing it from working properly)
  */
+char* mkmshar_b64Encode(char *data, size_t inlen);
+
+/**
+ * @brief Make an MShar archive
+ * @warning This function's return value must be manually freed if not null
+ * 
+ * @param prescript the script to run before extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
+ * @param postscript the script to run after extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
+ * @param files the files to be archived
+ * @param nfiles how many files to archive
+ * @param ignorefileerrors Ignore file errors and continue, set to 0 to not ignore
+ * @return char* the archive or NULL if there is a problem
+ */
+char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, int ignorefileerrors);
+
+/**
+ * @brief A version of mkmshar, but on error, return null. Internally uses mkmshar
+ * 
+ * @param prescript script to be executed before extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
+ * @param postscript script to be executed after extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
+ * @param files the path to files
+ * @param nfiles the number of files
+ * @return char* the archive or NULL if there is a problem 
+ * 
+ * @see mkmshar
+ */
+char* mkmshar_x(char* prescript, char* postscript, char** files, size_t nfiles);
+
+/**
+ * @brief A version of mkmshar, but on error, ignores it. Internally uses mkmshar
+ * 
+ * @param prescript the script to be executed before extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
+ * @param postscript the script to be executed after extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
+ * @param files the path to the files
+ * @param nfiles the number of files
+ * @return char* the archive or NULL if there is a problem
+ * 
+ * @see mkmshar
+ */
+char* mkmshar_s(char* prescript, char* postscript, char** files, size_t nfiles);
+
+
+
+
+
+#ifndef MXPSQL_MShar_NO_IMPL_4_LANG_BINDING /* define this if you want a custom implementation or you need to write a binding */
+
 char* mkmshar_b64Encode(char *data, size_t inlen)
 {
     static const char b64e[] = {
@@ -88,17 +157,6 @@ char* mkmshar_b64Encode(char *data, size_t inlen)
 }
 
 
-/**
- * @brief Make an MShar archive
- * @warning This function's return value must be manually freed if not null
- * 
- * @param prescript the script to run before extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
- * @param postscript the script to run after extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
- * @param files the files to be archived
- * @param nfiles how many files to archive
- * @param ignorefileerrors Ignore file errors and continue, set to 0 to not ignore
- * @return char* the archive or NULL if there is a problem
- */
 char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, int ignorefileerrors){
     register const size_t initarcfilesize = ((sizeof(char*)) * 1024);
     size_t i;
@@ -116,17 +174,26 @@ char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, in
 # This archive is created using MShar, MXPSQL's version of the Shell archiver\
 # You need a unix bourne shell and the base64 command to extract this\n\
 TEKTONE=;\n\
-TTk=\"$(find /bin /usr/bin /usr/local/bin . -name base64* -type f 2> /dev/null | head -n 1)\";\n\
+TTk=\"$(find /bin /usr/bin /usr/local/bin . -name base64* -type f 2> /dev/null | head -n 1)\";\n\n";
+
+        static const char* prestr2 =
+"echo \"This archive is created with MShar (MXPSQL's version of the Shell archiver)\";\n\
+\n\
+if test -z \"$TTk\"; then\n\
+    printf \"The base64 command is not found you loser. \nIt is needed to extract the archive. \nPlease make it available in PATH or install it.\";\n\
+    exit 1;\n\
+fi\n\
 \n\n\n";
 
-        if(strlen(prestr) + strlen(arcfile) > initarcfilesize){
-            arcfile = (char*) realloc(arcfile, strlen(prestr) + strlen(arcfile));
+        if(strlen(prestr) + strlen(prestr2) + strlen(arcfile) > initarcfilesize){
+            arcfile = (char*) realloc(arcfile, strlen(prestr) + strlen(prestr2) + strlen(arcfile));
             if(arcfile == NULL){
                 return NULL;
             }
         }
 
         strcat(arcfile, prestr);
+        strcat(arcfile, prestr2);
     }
 
     if(prescript != NULL){
@@ -247,7 +314,13 @@ TTk=\"$(find /bin /usr/bin /usr/local/bin . -name base64* -type f 2> /dev/null |
                         }
                     }
 
-                    sprintf(tektsrc, "TEKTONE='%s';\n", files[i]);
+                    if(sprintf(tektsrc, "TEKTONE='%s';\n", files[i]) < 0){
+                        free(arcfile);
+                        free(filecontent);
+                        free(fileblock);
+                        free(tektsrc);
+                        return NULL;
+                    }
                     strcat(fileblock, tektsrc);
                     free(tektsrc);
                 }
@@ -307,7 +380,14 @@ TTk=\"$(find /bin /usr/bin /usr/local/bin . -name base64* -type f 2> /dev/null |
                         strcat(bas64, "");
                     }
 
-                    sprintf(basprintf, fmt, bas64);
+                    if(sprintf(basprintf, fmt, bas64) < 0){
+                        free(arcfile);
+                        free(filecontent);
+                        free(fileblock);
+                        free(basprintf);
+                        free(bas64);
+                        return NULL;
+                    }
 
                     if(strlen(basprintf) + strlen(fileblock) > strlen(fileblock)){
                         fileblock = (char*) realloc(fileblock, strlen(basprintf) + strlen(fileblock) + 1);
@@ -390,6 +470,16 @@ exit 0;";
 
     return arcfile;
 }
+
+char* mkmshar_x(char* prescript, char* postscript, char** files, size_t nfiles){
+    return mkmshar(prescript, postscript, files, nfiles, 0);
+}
+
+char* mkmshar_s(char* prescript, char* postscript, char** files, size_t nfiles){
+    return mkmshar(prescript, postscript, files, nfiles, 1);
+}
+
+#endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

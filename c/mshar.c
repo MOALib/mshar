@@ -66,7 +66,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-    script = mkmshar(pre_script, post_script, files, argc - 3, 1);
+    script = mkmshar_s(pre_script, post_script, files, argc - 3);
     if(script == NULL){
         fprintf(stderr, "Error creating script\n");
         free(script);

@@ -6,7 +6,7 @@ cls:
 	@clear || cls
 
 build:
-	gcc mshar.c -g -Og -ansi -Wall -pedantic -fdiagnostics-color -o ./a.exe
+	gcc mshar.c -g -Og -ansi -Wall -pedantic -fdiagnostics-color -o ./mshar.exe
 
 docs: cls
 	doxygen Doxyfile
