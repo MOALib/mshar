@@ -1,9 +1,7 @@
 ## Welcome to MShar
 
-A better version of the Shar archiver, with an api, for documentation, read the docs in the repository.
+A better version of the Shar archiver, with ANSI C and Shell script implementations that can be embeded.
 
 <hr>
 
-What do you need to run it? The base64 command.
-
-Can you embed it? You sure can!
+Documentation are available for the ANSI C and Shell Script code and they can be embeded with a very simple API.
