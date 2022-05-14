@@ -1,7 +1,8 @@
 /**
  * @file mshar.h
  * @author MXPSQL
- * @brief MShar library in a header
+ * @brief MShar library in a header.
+ * Header only (there is an exception) library for creating MShar Archives, a self extracting archive format based of shar.
  * @version 0 (rolling release)
  * @date 2022-05-12
  * 
@@ -10,7 +11,7 @@
  * 
  * Copyright (c) 2022 MXPSQL
  * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * Permission is hereby granted, MXPSQL_MShar_Free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
@@ -27,14 +28,13 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- * 
- * 
- * @mainpage ANSI C Implementation of MShar
- * 
- * This is the documentation about the ANSI C implementation of MShar.
  */
 
 #ifndef MXPSQL_MShar_H
+/**
+ * @brief Include guard
+ * 
+ */
 #define MXPSQL_MShar_H
 
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -52,6 +52,46 @@
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
+
+
+/* Use your own allocator here if you want to */
+#ifndef MXPSQL_MShar_Malloc
+/**
+ * @brief Define this macro to use your own custom malloc functio for your own allocator
+ * 
+ */
+#define MXPSQL_MShar_Malloc(size) malloc(size)
+#endif
+
+#ifndef MXPSQL_MShar_Calloc
+/**
+ * @brief Same thing with MXPSQL_MShar_Malloc
+ * 
+ * @see MXPSQL_MShar_Malloc
+ */
+#define MXPSQL_MShar_Calloc(count, size) calloc(count, size)
+#endif
+
+#ifndef MXPSQL_MShar_Realloc
+/**
+ * @brief Same thing with MXPSQL_MShar_Calloc
+ * 
+ * @see MXPSQL_MShar_Calloc
+ */
+#define MXPSQL_MShar_Realloc(ptr, size) realloc(ptr, size)
+#endif
+
+#ifndef MXPSQL_MShar_Free
+/**
+ * @brief Same thing with MXPSQL_MShar_Realloc
+ * 
+ * @see MXPSQL_MShar_Realloc
+ */
+#define MXPSQL_MShar_Free(ptr) free(ptr)
+#endif
+
+
+
 
 /**
  * Thanks https://github.com/skullchap/b64/blob/master/b64.h for the code.
@@ -74,7 +114,7 @@ char* mkmshar_b64Encode(char *data, size_t inlen);
 char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, int ignorefileerrors);
 
 /**
- * @brief A version of mkmshar, but on error, return null. Internally uses mkmshar
+ * @brief A version of mkmshar, but on all error, return null. Internally uses mkmshar.
  * 
  * @param prescript script to be executed before extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
  * @param postscript script to be executed after extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
@@ -87,7 +127,9 @@ char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, in
 char* mkmshar_x(char* prescript, char* postscript, char** files, size_t nfiles);
 
 /**
- * @brief A version of mkmshar, but on error, ignores it. Internally uses mkmshar
+ * @brief A version of mkmshar, but on file operation error, ignores it.
+ * 
+ * Does not ignore sprintf and memory allocation errors though, this means it returns null on those kind of errors. Internally uses mkmshar.
  * 
  * @param prescript the script to be executed before extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
  * @param postscript the script to be executed after extraction, put NULL if empty and do not put the filename, put the content of the script you want to run
@@ -98,6 +140,7 @@ char* mkmshar_x(char* prescript, char* postscript, char** files, size_t nfiles);
  * @see mkmshar
  */
 char* mkmshar_s(char* prescript, char* postscript, char** files, size_t nfiles);
+
 
 
 
@@ -119,7 +162,7 @@ char* mkmshar_b64Encode(char *data, size_t inlen)
 
     size_t outlen = ((((inlen) + 2) / 3) * 4);
 
-    char *out = (char*) malloc(outlen + 1);
+    char *out = (char*) MXPSQL_MShar_Malloc(outlen + 1);
     char *p;
     size_t i;
 
@@ -158,13 +201,13 @@ char* mkmshar_b64Encode(char *data, size_t inlen)
 
 
 char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, int ignorefileerrors){
-    register const size_t initarcfilesize = ((sizeof(char*)) * 1024);
+    register const size_t initarcfilesize = ((sizeof(char*) + sizeof(size_t)) * 1024);
     size_t i;
 
-    char* arcfile = (char*) calloc(initarcfilesize, initarcfilesize);
+    char* arcfile = (char*) MXPSQL_MShar_Calloc(initarcfilesize, initarcfilesize);
 
     if(!arcfile){
-        free(arcfile);
+        MXPSQL_MShar_Free(arcfile);
         return NULL;
     }
 
@@ -186,7 +229,7 @@ fi\n\
 \n\n\n";
 
         if(strlen(prestr) + strlen(prestr2) + strlen(arcfile) > initarcfilesize){
-            arcfile = (char*) realloc(arcfile, strlen(prestr) + strlen(prestr2) + strlen(arcfile));
+            arcfile = (char*) MXPSQL_MShar_Realloc(arcfile, strlen(prestr) + strlen(prestr2) + strlen(arcfile));
             if(arcfile == NULL){
                 return NULL;
             }
@@ -198,7 +241,7 @@ fi\n\
 
     if(prescript != NULL){
         if(strlen(arcfile) + strlen(arcfile) > strlen(arcfile)){
-            arcfile = (char*) realloc(arcfile, strlen(arcfile) + strlen(prescript) + 1);
+            arcfile = (char*) MXPSQL_MShar_Realloc(arcfile, strlen(arcfile) + strlen(prescript) + 1);
             if(arcfile == NULL){
                 return NULL;
             }
@@ -215,7 +258,7 @@ fi\n\
                 continue;
             }
             else{
-                free(arcfile);
+                MXPSQL_MShar_Free(arcfile);
                 return NULL;
             }
         }
@@ -226,7 +269,7 @@ fi\n\
             }
             else{
                 fclose(fptr);
-                free(arcfile);
+                MXPSQL_MShar_Free(arcfile);
                 return NULL;
             }
         }
@@ -241,7 +284,7 @@ fi\n\
                 }
                 else{
                     fclose(fptr);
-                    free(arcfile);
+                    MXPSQL_MShar_Free(arcfile);
                     return NULL;
                 }
             }
@@ -252,7 +295,7 @@ fi\n\
                 }
                 else{
                     fclose(fptr);
-                    free(arcfile);
+                    MXPSQL_MShar_Free(arcfile);
                     return NULL;
                 }
             }
@@ -265,15 +308,15 @@ fi\n\
             }
             else{
                 fclose(fptr);
-                free(arcfile);
+                MXPSQL_MShar_Free(arcfile);
                 return NULL;
             }
         }
 
-        filecontent = (char*) malloc(fsize);
+        filecontent = (char*) MXPSQL_MShar_Malloc(fsize);
         if(filecontent == NULL){
-            free(arcfile);
-            free(filecontent);
+            MXPSQL_MShar_Free(arcfile);
+            MXPSQL_MShar_Free(filecontent);
             fclose(fptr);
             return NULL;
         }
@@ -281,58 +324,58 @@ fi\n\
         fread(filecontent, fsize, 1, fptr);
         fclose(fptr);
 
-        /*  realloc if needed */
+        /*  MXPSQL_MShar_Realloc if needed */
         {
             if(strlen(arcfile) + strlen(filecontent) > strlen(arcfile)){
-                arcfile = (char*) realloc(arcfile, strlen(arcfile) + strlen(filecontent) + 1);
+                arcfile = (char*) MXPSQL_MShar_Realloc(arcfile, strlen(arcfile) + strlen(filecontent) + 1);
             }
 
             {
-                char* fileblock = (char*) calloc(initarcfilesize, initarcfilesize);
+                char* fileblock = (char*) MXPSQL_MShar_Calloc(initarcfilesize, initarcfilesize);
                 if(fileblock == NULL){
-                    free(arcfile);
-                    free(filecontent);
+                    MXPSQL_MShar_Free(arcfile);
+                    MXPSQL_MShar_Free(filecontent);
                     return NULL;
                 }
 
                 {
-                    char* tektsrc = (char*) calloc(initarcfilesize, initarcfilesize);
+                    char* tektsrc = (char*) MXPSQL_MShar_Calloc(initarcfilesize, initarcfilesize);
                     if(tektsrc == NULL){
-                        free(arcfile);
-                        free(filecontent);
-                        free(fileblock);
+                        MXPSQL_MShar_Free(arcfile);
+                        MXPSQL_MShar_Free(filecontent);
+                        MXPSQL_MShar_Free(fileblock);
                         return NULL;
                     }
 
                     if(strlen(files[i]) + strlen(tektsrc) > strlen(fileblock)){
-                        tektsrc = (char*) realloc(tektsrc, strlen(files[i]) + strlen(tektsrc) + 1);
+                        tektsrc = (char*) MXPSQL_MShar_Realloc(tektsrc, strlen(files[i]) + strlen(tektsrc) + 1);
                         if(tektsrc == NULL){
-                            free(arcfile);
-                            free(filecontent);
-                            free(fileblock);
+                            MXPSQL_MShar_Free(arcfile);
+                            MXPSQL_MShar_Free(filecontent);
+                            MXPSQL_MShar_Free(fileblock);
                             return NULL;
                         }
                     }
 
                     if(sprintf(tektsrc, "TEKTONE='%s';\n", files[i]) < 0){
-                        free(arcfile);
-                        free(filecontent);
-                        free(fileblock);
-                        free(tektsrc);
+                        MXPSQL_MShar_Free(arcfile);
+                        MXPSQL_MShar_Free(filecontent);
+                        MXPSQL_MShar_Free(fileblock);
+                        MXPSQL_MShar_Free(tektsrc);
                         return NULL;
                     }
                     strcat(fileblock, tektsrc);
-                    free(tektsrc);
+                    MXPSQL_MShar_Free(tektsrc);
                 }
 
                 {
                     char* dirnam = "mkdir ./$(dirname \"$TEKTONE\") 2> /dev/null;\n";
                     if(strlen(dirnam) + strlen(fileblock) > strlen(fileblock)){
-                        fileblock = (char*) realloc(fileblock, strlen(dirnam) + strlen(fileblock) + 1);
+                        fileblock = (char*) MXPSQL_MShar_Realloc(fileblock, strlen(dirnam) + strlen(fileblock) + 1);
                         if(fileblock == NULL){
-                            free(arcfile);
-                            free(filecontent);
-                            free(fileblock);
+                            MXPSQL_MShar_Free(arcfile);
+                            MXPSQL_MShar_Free(filecontent);
+                            MXPSQL_MShar_Free(fileblock);
                             return NULL;
                         }
                     }
@@ -343,11 +386,11 @@ fi\n\
                 {
                     char* info = "echo \"x - $TEKTONE\";\n";
                     if(strlen(info) + strlen(fileblock) > strlen(fileblock)){
-                        fileblock = (char*) realloc(fileblock, strlen(info) + strlen(fileblock) + 1);
+                        fileblock = (char*) MXPSQL_MShar_Realloc(fileblock, strlen(info) + strlen(fileblock) + 1);
                         if(fileblock == NULL){
-                            free(arcfile);
-                            free(filecontent);
-                            free(fileblock);
+                            MXPSQL_MShar_Free(arcfile);
+                            MXPSQL_MShar_Free(filecontent);
+                            MXPSQL_MShar_Free(fileblock);
                             return NULL;
                         }
                     }
@@ -356,53 +399,53 @@ fi\n\
                 }
 
                 {
-                    char* basprintf = (char*) calloc(initarcfilesize, initarcfilesize);
+                    char* basprintf = (char*) MXPSQL_MShar_Calloc(initarcfilesize, initarcfilesize);
                     const char* fmt = "printf '%s' > \"./$TEKTONE\";\n";
                     char* bas64 = NULL;
                     if(basprintf == NULL){
-                        free(arcfile);
-                        free(filecontent);
-                        free(fileblock);
+                        MXPSQL_MShar_Free(arcfile);
+                        MXPSQL_MShar_Free(filecontent);
+                        MXPSQL_MShar_Free(fileblock);
                         return NULL;
                     }
 
                     bas64 = mkmshar_b64Encode(filecontent, fsize);
 
                     if(bas64 == NULL){
-                        bas64 = (char*) malloc(sizeof(char));
+                        bas64 = (char*) MXPSQL_MShar_Malloc(sizeof(char));
                         if(bas64 == NULL){
-                            free(arcfile);
-                            free(filecontent);
-                            free(fileblock);
-                            free(basprintf);
+                            MXPSQL_MShar_Free(arcfile);
+                            MXPSQL_MShar_Free(filecontent);
+                            MXPSQL_MShar_Free(fileblock);
+                            MXPSQL_MShar_Free(basprintf);
                             return NULL;
                         }
                         strcat(bas64, "");
                     }
 
                     if(sprintf(basprintf, fmt, bas64) < 0){
-                        free(arcfile);
-                        free(filecontent);
-                        free(fileblock);
-                        free(basprintf);
-                        free(bas64);
+                        MXPSQL_MShar_Free(arcfile);
+                        MXPSQL_MShar_Free(filecontent);
+                        MXPSQL_MShar_Free(fileblock);
+                        MXPSQL_MShar_Free(basprintf);
+                        MXPSQL_MShar_Free(bas64);
                         return NULL;
                     }
 
                     if(strlen(basprintf) + strlen(fileblock) > strlen(fileblock)){
-                        fileblock = (char*) realloc(fileblock, strlen(basprintf) + strlen(fileblock) + 1);
+                        fileblock = (char*) MXPSQL_MShar_Realloc(fileblock, strlen(basprintf) + strlen(fileblock) + 1);
                         if(fileblock == NULL){
-                            free(arcfile);
-                            free(filecontent);
-                            free(fileblock);
-                            free(basprintf);
+                            MXPSQL_MShar_Free(arcfile);
+                            MXPSQL_MShar_Free(filecontent);
+                            MXPSQL_MShar_Free(fileblock);
+                            MXPSQL_MShar_Free(basprintf);
                             return NULL;
                         }
                     }
 
                     strcat(fileblock, basprintf);
 
-                    free(bas64);
+                    MXPSQL_MShar_Free(bas64);
                 }
 
                 {
@@ -413,11 +456,11 @@ mv \"$tmp\" \"./$TEKTONE\";\n\
 tmp=;\
 \n\n";
                     if(strlen(debas64tmp) + strlen(fileblock) > strlen(fileblock)){
-                        fileblock = (char*) realloc(fileblock, strlen(debas64tmp) + strlen(fileblock) + 1);
+                        fileblock = (char*) MXPSQL_MShar_Realloc(fileblock, strlen(debas64tmp) + strlen(fileblock) + 1);
                         if(fileblock == NULL){
-                            free(arcfile);
-                            free(filecontent);
-                            free(fileblock);
+                            MXPSQL_MShar_Free(arcfile);
+                            MXPSQL_MShar_Free(filecontent);
+                            MXPSQL_MShar_Free(fileblock);
                             return NULL;
                         }
                     }
@@ -425,11 +468,11 @@ tmp=;\
                 }
 
                 if(strlen(fileblock) + strlen(arcfile) > strlen(arcfile)){
-                    arcfile = (char*) realloc(arcfile, strlen(arcfile) + strlen(fileblock) + 1);
+                    arcfile = (char*) MXPSQL_MShar_Realloc(arcfile, strlen(arcfile) + strlen(fileblock) + 1);
                     if(fileblock == NULL){
-                        free(arcfile);
-                        free(filecontent);
-                        free(fileblock);
+                        MXPSQL_MShar_Free(arcfile);
+                        MXPSQL_MShar_Free(filecontent);
+                        MXPSQL_MShar_Free(fileblock);
                         return NULL;
                     }
                 }
@@ -437,14 +480,14 @@ tmp=;\
             }
         }
 
-        free(filecontent);
+        MXPSQL_MShar_Free(filecontent);
     }
 
     if(postscript != NULL){
         if(strlen(arcfile) + strlen(postscript) > strlen(arcfile)){
-            arcfile = (char*) realloc(arcfile, strlen(arcfile) + strlen(postscript) + 1);
+            arcfile = (char*) MXPSQL_MShar_Realloc(arcfile, strlen(arcfile) + strlen(postscript) + 1);
             if(arcfile == NULL){
-                free(arcfile);
+                MXPSQL_MShar_Free(arcfile);
                 return NULL;
             }
         }
@@ -458,9 +501,9 @@ tmp=;\
 exit 0;";
 
         if(strlen(poststr) + strlen(arcfile) > strlen(arcfile)){
-            arcfile = (char*) realloc(arcfile, strlen(arcfile) + strlen(poststr) + 1);
+            arcfile = (char*) MXPSQL_MShar_Realloc(arcfile, strlen(arcfile) + strlen(poststr) + 1);
             if(arcfile == NULL){
-                free(arcfile);
+                MXPSQL_MShar_Free(arcfile);
                 return NULL;
             }
         }

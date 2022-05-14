@@ -1,3 +1,6 @@
+CFLAGS=-g -Og -ansi -Wall -Werror -Wextra -pedantic -pedantic-errors -fdiagnostics-color -pipe
+CC=gcc
+
 .PHONY: all cls build docs
 
 all: cls build
@@ -6,7 +9,7 @@ cls:
 	@clear || cls
 
 build:
-	gcc mshar.c -g -Og -ansi -Wall -pedantic -fdiagnostics-color -o ./mshar.exe
+	$(CC) mshar.c $(CFLAGS) -o ./mshar.exe
 
 docs: cls
 	doxygen Doxyfile

@@ -1,5 +1,6 @@
 #include "src/mshar.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -18,7 +19,7 @@ int main(int argc, char* argv[]){
     if(argc < 3){
         fprintf(stderr, "usage: %s [pre execution script] [post execution script] file1 file2 file3 file4 file5 file6 file7 file8 file9 ... > archive\n", argv[0]);
         fprintf(stderr, "Put - for [pre execution script] and [post execution script] to not use a script\n");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     pre_script = argv[1];
@@ -30,6 +31,10 @@ int main(int argc, char* argv[]){
     else{
         size_t fsize;
         f = fopen(pre_script, "rb");
+        if(f == NULL){
+            fprintf(stderr, "Could not open pre script file %s\n", pre_script);
+            return EXIT_FAILURE;
+        }
         {
             while(fgetc(f) != EOF){;}
             fsize = ftell(f);
@@ -47,6 +52,10 @@ int main(int argc, char* argv[]){
     else{
         size_t fsize;
         f = fopen(post_script, "rb");
+        if(f == NULL){
+            fprintf(stderr, "Could not open post script file %s\n", post_script);
+            return EXIT_FAILURE;
+        }
         {
             while(fgetc(f) != EOF){;}
             fsize = ftell(f);
@@ -70,12 +79,12 @@ int main(int argc, char* argv[]){
     if(script == NULL){
         fprintf(stderr, "Error creating script\n");
         free(script);
-        return 1;
+        return EXIT_FAILURE;
     }
     else{
         fprintf(stdout, "%s", script);
         free(script);
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }

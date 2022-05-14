@@ -7,6 +7,11 @@
         "vector": "c",
         "locale.h": "c",
         "stdio.h": "c",
-        "bitset": "c"
+        "bitset": "c",
+        "hash_map": "c",
+        "chrono": "c",
+        "algorithm": "c",
+        "__bit_reference": "c",
+        "unordered_map": "c"
     }
 }
