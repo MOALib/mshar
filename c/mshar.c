@@ -40,7 +40,7 @@ int main(int argc, char* argv[]){
             fsize = ftell(f);
             fseek(f, 0, SEEK_SET);
         }
-        pre_script = malloc(fsize + 1);
+        pre_script = (char*) malloc(fsize + 1);
         fread(pre_script, fsize, 1, f);
         pre_script[fsize] = '\0';
         fclose(f);
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]){
             fsize = ftell(f);
             fseek(f, 0, SEEK_SET);
         }
-        post_script = malloc(fsize + 1);
+        post_script = (char*) malloc(fsize + 1);
         fread(post_script, fsize, 1, f);
         post_script[fsize] = '\0';
         fclose(f);
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
 
     {
         int i;
-        files = malloc(sizeof(char*) * (argc - 3));
+        files = (char**) malloc(sizeof(char*) * (argc - 3));
         for(i = 3; i < argc; i++){
             files[i - 3] = argv[i];
         }

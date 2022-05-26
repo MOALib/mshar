@@ -38,6 +38,7 @@
 #define MXPSQL_MShar_H
 
 #if defined(__cplusplus) || defined(c_plusplus)
+#include <iostream>
 #include <cstdio>
 #include <cstddef>
 #include <cstdlib>
@@ -50,6 +51,8 @@
 #endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
+using namespace std;
+
 extern "C" {
 #endif
 
@@ -201,7 +204,7 @@ char* mkmshar_b64Encode(char *data, size_t inlen)
 
 
 char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, int ignorefileerrors){
-    register const size_t initarcfilesize = ((sizeof(char*) + sizeof(size_t)) * 1024);
+    static const size_t initarcfilesize = ((sizeof(char*) + sizeof(size_t)) * 1024);
     size_t i;
 
     char* arcfile = (char*) MXPSQL_MShar_Calloc(initarcfilesize, initarcfilesize);
@@ -212,15 +215,17 @@ char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, in
     }
 
     {
-        static const char* prestr = 
+        static const char* prestr = (char*)
 "#!/bin/sh \n\
-# This archive is created using MShar, MXPSQL's version of the Shell archiver\
+# This archive is created using MShar, MXPSQL's version of the Shell archiver\n\
 # You need a unix bourne shell and the base64 command to extract this\n\
 TEKTONE=;\n\
-TTk=\"$(find /bin /usr/bin /usr/local/bin . -name base64* -type f 2> /dev/null | head -n 1)\";\n\n";
+POSIXLY_CORRECT=1; # Make this posix \n\
+POSIX_ME_HARDER=1; # Make this posix \n\
+TTk=\"$(find /bin /usr/bin /usr/local/bin . -name 'base64*' -type f 2> /dev/null | head -n 1)\";\n\n";
 
-        static const char* prestr2 =
-"echo \"This archive is created with MShar (MXPSQL's version of the Shell archiver)\";\n\
+        static const char* prestr2 = (char*)
+"printf \"This archive is created with MShar (MXPSQL's version of the Shell archiver)\";\n\
 \n\
 if test -z \"$TTk\"; then\n\
     printf \"The base64 command is not found you loser. \nIt is needed to extract the archive. \nPlease make it available in PATH or install it.\";\n\
@@ -276,6 +281,8 @@ fi\n\
 
         /* Read until the end and get the size as C++ does not need to implement SEEK_END */
         {
+            long int ifsize = 0;
+
             while(fgetc(fptr) != EOF){;} /* this may seem hacky and unsophisticated, but it is portable and sophisticated due to C++ not mandating to implement SEEK_END just like the comment before. 
             All you do is read until you reach EOF, then get the file size and return to beginning. */
             if(fseek(fptr, 0, SEEK_CUR) != 0){
@@ -288,7 +295,22 @@ fi\n\
                     return NULL;
                 }
             }
-            fsize = ftell(fptr);
+
+            ifsize = ftell(fptr);
+            if(ifsize < 0){
+                if(ignorefileerrors != 0){
+                    continue;
+                }
+                else{
+                    fclose(fptr);
+                    MXPSQL_MShar_Free(arcfile);
+                    return NULL;
+                }
+            }
+            else{
+                fsize = (size_t) ifsize;
+            }
+
             if(fseek(fptr, 0, SEEK_SET) != 0){
                 if(ignorefileerrors != 0){
                     continue;
@@ -369,7 +391,7 @@ fi\n\
                 }
 
                 {
-                    char* dirnam = "mkdir ./$(dirname \"$TEKTONE\") 2> /dev/null;\n";
+                    static char* dirnam = (char*) "mkdir ./$(dirname \"$TEKTONE\") 2> /dev/null;\n";
                     if(strlen(dirnam) + strlen(fileblock) > strlen(fileblock)){
                         fileblock = (char*) MXPSQL_MShar_Realloc(fileblock, strlen(dirnam) + strlen(fileblock) + 1);
                         if(fileblock == NULL){
@@ -384,7 +406,7 @@ fi\n\
                 }
 
                 {
-                    char* info = "echo \"x - $TEKTONE\";\n";
+                    static char* info = (char*) "printf \"x - $TEKTONE\";\n";
                     if(strlen(info) + strlen(fileblock) > strlen(fileblock)){
                         fileblock = (char*) MXPSQL_MShar_Realloc(fileblock, strlen(info) + strlen(fileblock) + 1);
                         if(fileblock == NULL){
@@ -399,8 +421,23 @@ fi\n\
                 }
 
                 {
+                    static char* marker = (char*) "#@EE\n";
+                    if(strlen(marker) + strlen(fileblock) > strlen(fileblock)){
+                        fileblock = (char*) MXPSQL_MShar_Realloc(fileblock, strlen(marker) + strlen(fileblock) + 1);
+                        if(fileblock == NULL){
+                            MXPSQL_MShar_Free(arcfile);
+                            MXPSQL_MShar_Free(filecontent);
+                            MXPSQL_MShar_Free(fileblock);
+                            return NULL;
+                        }
+                    }
+
+                    strcat(fileblock, marker);
+                }
+
+                {
                     char* basprintf = (char*) MXPSQL_MShar_Calloc(initarcfilesize, initarcfilesize);
-                    const char* fmt = "printf '%s' > \"./$TEKTONE\";\n";
+                    static const char* fmt = (char*) "printf '%s' > \"./$TEKTONE\";\n";
                     char* bas64 = NULL;
                     if(basprintf == NULL){
                         MXPSQL_MShar_Free(arcfile);
@@ -449,7 +486,7 @@ fi\n\
                 }
 
                 {
-                    char* debas64tmp = 
+                    static char* debas64tmp = (char*)
 "tmp=$(mktemp);\n\
 \"$TTk\" -d \"./$TEKTONE\" > \"$tmp\";\n\
 mv \"$tmp\" \"./$TEKTONE\";\n\
@@ -495,10 +532,13 @@ tmp=;\
     }
 
     {
-        char* poststr = 
+        static char* poststr = (char*)
 "\n\
 # This is a shell archive lol, created with mshar (MXPSQL's version of the Shell archiver)\n\
-exit 0;";
+POSIXLY_CORRECT=; # Unposix it as we Done\n\
+POSIX_ME_HARDER=; # Unposix it as we Done\n\
+exit 0;\
+\n";
 
         if(strlen(poststr) + strlen(arcfile) > strlen(arcfile)){
             arcfile = (char*) MXPSQL_MShar_Realloc(arcfile, strlen(arcfile) + strlen(poststr) + 1);
@@ -511,7 +551,7 @@ exit 0;";
         strcat(arcfile, poststr);
     }
 
-    return arcfile;
+    return (char*) arcfile;
 }
 
 char* mkmshar_x(char* prescript, char* postscript, char** files, size_t nfiles){
