@@ -361,7 +361,31 @@ fi\n\
                 }
 
                 {
-                    char* tektsrc = (char*) MXPSQL_MShar_Calloc(initarcfilesize, initarcfilesize);
+                    char* tektfmt = NULL;
+                    char* tektsrc = NULL;
+
+                    {
+                        char* tektfmt_part1="TEKTONE='";
+                        char* tektfmt_part2="'\n";
+
+                        size_t tektfmt_size = ((strlen(tektfmt_part1) + strlen(files[i]) + strlen(tektfmt_part2)) * sizeof(char*));
+
+                        tektfmt = (char*) MXPSQL_MShar_Calloc(tektfmt_size, tektfmt_size);
+                        tektsrc = (char* ) MXPSQL_MShar_Calloc(tektfmt_size, tektfmt_size);
+
+                        if(tektfmt == NULL){
+                            MXPSQL_MShar_Free(arcfile);
+                            MXPSQL_MShar_Free(filecontent);
+                            MXPSQL_MShar_Free(fileblock);
+                            return NULL;
+                        }
+
+                        strcat(tektfmt, tektfmt_part1);
+                        strcat(tektfmt, "%s");
+                        strcat(tektfmt, tektfmt_part2);
+                    }
+
+                    /* tektsrc = (char*) MXPSQL_MShar_Calloc(initarcfilesize, initarcfilesize); */
                     if(tektsrc == NULL){
                         MXPSQL_MShar_Free(arcfile);
                         MXPSQL_MShar_Free(filecontent);
@@ -379,7 +403,7 @@ fi\n\
                         }
                     }
 
-                    if(sprintf(tektsrc, "TEKTONE='%s';\n", files[i]) < 0){
+                    if(sprintf(tektsrc, tektfmt, files[i]) < 0){
                         MXPSQL_MShar_Free(arcfile);
                         MXPSQL_MShar_Free(filecontent);
                         MXPSQL_MShar_Free(fileblock);

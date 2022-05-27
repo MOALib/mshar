@@ -1,4 +1,4 @@
-CFLAGS=-g -Og -ansi -Wall -Werror -Wextra -Wstrict -pedantic -pedantic-errors -fdiagnostics-color -pipe
+CFLAGS=-g -Og -ansi -std=c90 -Wall -Werror -Wextra -Wpedantic -pedantic -pedantic-errors -fdiagnostics-color -pipe
 CC=gcc
 
 .PHONY: all cls build docs
