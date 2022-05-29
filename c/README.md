@@ -7,3 +7,7 @@ Link with libm if used with C90 (custom snprintf integer functions) although in 
 ## CMake Integration
 
 TBA
+
+## Bindings
+
+Python and C# bindings exist, look at the `binding` directory.

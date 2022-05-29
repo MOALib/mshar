@@ -12,6 +12,13 @@
         "chrono": "c",
         "algorithm": "c",
         "__bit_reference": "c",
-        "unordered_map": "c"
+        "unordered_map": "c",
+        "functional": "c",
+        "list": "c",
+        "memory": "c",
+        "random": "c",
+        "__hash_table": "c",
+        "deque": "c",
+        "ios": "c"
     }
 }
