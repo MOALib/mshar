@@ -316,6 +316,7 @@ char* mkmshar_b64Encode(char *data, size_t inlen)
     #if defined(__cplusplus) || defined(c_plusplus)
     using namespace std;
     #endif
+
     static const char b64e[] = {
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
         'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
@@ -367,6 +368,7 @@ char* mkmshar_b64Encode(char *data, size_t inlen)
 
 size_t mkmshar_strnlen(const char *s, size_t maxlen)
 {
+
     #if defined(__cplusplus) || defined(c_plusplus)
     using namespace std;
     #endif
@@ -383,6 +385,7 @@ size_t mkmshar_strnlen(const char *s, size_t maxlen)
 }
 
 int mkmshar_int_to_str(int x, char *buf, size_t size, int base, int uppercase) {
+
     #if defined(__cplusplus) || defined(c_plusplus)
     using namespace std;
     #endif
@@ -494,6 +497,7 @@ int mkmshar_snprintf(char *str, size_t size, const char *format, ...)
 }
 
 char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, int ignorefileerrors){
+    
     #if defined(__cplusplus) || defined(c_plusplus)
     using namespace std;
     #endif
