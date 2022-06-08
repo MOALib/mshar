@@ -1,0 +1,9 @@
+/* SWIG interface file to generate MShar bindings */
+
+%module MShar
+
+%{
+#include "../src/mshar.h"
+%}
+
+%include "../src/mshar.h"

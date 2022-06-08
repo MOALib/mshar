@@ -1,5 +1,8 @@
 sh/mshar.html/
 c/html/
+c/htmldoc/
+
+
 
 c/*.exe
 c/*.exe.stackdump
@@ -8,22 +11,23 @@ c/*.so
 c/*.so.*
 c/*.dylib
 c/*.dll
+c/*.dll
 
-c/binding/*/*.so
-c/binding/*/*.so.*
-c/binding/*/*.dll
-c/binding/*/*.dylib
+c/binding/src/
+c/binding/src/*
 
-c/binding/msharsharp/*/libmshar
-c/binding/msharsharp/*/*.so
-c/binding/msharsharp/*/*.so.*
-c/binding/msharsharp/*/*.dll
-c/binding/msharshap/*/*.dylib
-c/binding/msharsharp/*/bin
-c/binding/msharsharp/*/obj
+c/binding/msharsharp/
+c/binding/msharsharp/*
 
+c/binding/pymshar/
+c/binding/pymshar/*
+c/binding/mshar_wrap.c
 c/binding/*/__pycache__
 
+
+
 c/a.s
+
+
 
 c/__pycache__

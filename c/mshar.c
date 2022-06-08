@@ -1,5 +1,40 @@
+/**
+ * @file mshar.c
+ * @author MXPSQL
+ * @brief Main MShar Command line program
+ * @version 0
+ * @date 2022-06-04
+ * 
+ * @copyright 
+ * 
+ * MIT License
+ * 
+ * Copyright (c) 2022 MXPSQL
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * 
+ */
+
 #include "src/mshar.h"
+
 #include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -77,12 +112,14 @@ int main(int argc, char* argv[]){
 
     script = mkmshar_s(pre_script, post_script, files, argc - 3);
     if(script == NULL){
-        fprintf(stderr, "Error creating script\n");
+        fprintf(stderr, "Error creating script: %s\n", strerror(errno));
+        /* perror("Error creating script"); */
         free(script);
         return EXIT_FAILURE;
     }
     else{
         fprintf(stdout, "%s", script);
+        fflush(stdout);
         free(script);
     }
 

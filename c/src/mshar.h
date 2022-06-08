@@ -7,11 +7,12 @@
  * @date 2022-05-12
  * 
  * @copyright 
+ * 
  * MIT License
  * 
  * Copyright (c) 2022 MXPSQL
  * 
- * Permission is hereby granted, MXPSQL_MShar_Free of charge, to any person obtaining a copy
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
@@ -28,6 +29,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ * 
  */
 
 #ifndef MXPSQL_MShar_H
@@ -37,6 +39,20 @@
  */
 #define MXPSQL_MShar_H
 
+#if __STDC_VERSION__ >= 201112L
+
+    #ifndef __STDC_WANT_LIB_EXT1__
+        /* we want those bounds checked functions if available */
+
+        /**
+         * @brief We want bounds checked functions
+         * 
+         */
+        #define __STDC_WANT_LIB_EXT1__ 1
+    #endif
+
+#endif
+
 #if defined(__cplusplus) || defined(c_plusplus)
 #include <iostream>
 #include <cmath>
@@ -45,7 +61,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdarg>
-#include <cstddef>
+#include <clocale>
 #else
 #include <math.h>
 #include <stdio.h>
@@ -53,12 +69,84 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <stddef.h>
+#include <locale.h>
+#endif
+
+/* All these to be used for later things, right now no use. */
+#if (defined(__linux__) || defined(linux) || defined(__linux))
+    /**
+     * @brief I liek linux. I use arch btw.
+     * 
+     */
+    #define MXPSQL_MShar_OS_Linux
+#endif
+
+#if (defined(unix) || defined(__unix) || defined(__unix__))
+    /**
+     * @brief Unixfication of MShar
+     * 
+     */
+    #define MXPSQL_MShar_OS_Unix
+#endif
+
+#if defined(__APPLE__)
+    /**
+     * @brief Classic 68000 MacOS
+     * 
+     */
+    #define MXPSQL_MShar_OS_MacOS
+
+    #if defined(__MACH__)
+        /**
+         * @brief New MacOS (PowerPC, x86, x86_64 and ARM)
+         * 
+         */
+        #define MXPSQL_MShar_OS_MacOSX
+    #endif
+
+#endif
+
+
+
+#if (defined(MXPSQL_MShar_OS_Unix) || defined(MXPSQL_MShar_OS_MacOSX) || defined(__CYGWIN__) || defined(MXPSQL_MShar_OS_Linux) || defined(__FreeBSD__))
+
+    /* 
+    #ifndef _BSD_SOURCE
+        #define _BSD_SOURCE
+    #endif
+
+    #ifndef _GNU_SOURCE
+        #define _GNU_SOURCE
+    #endif
+
+    #ifndef _POSIX_SOURCE
+        #define _POSIX_SOURCE
+    #endif
+
+    #ifndef _XOPEN_SOURCE
+        #define _XOPEN_SOURCE
+    #endif
+
+    #ifndef _POSIX_C_SOURCE
+        #define _POSIX_C_SOURCE
+    #endif
+
+#include <unistd.h> 
+    */
+
+   /**
+    * @brief We like POSIX and SUS (Not sus, but Single Unix Specification)
+    * 
+    */
+    #define MXPSQL_MShar_OS_POSIX_SUS
+
+#endif
+
+#ifndef __STDC__
+#error "MShar requires an ANSI C compiler"
 #endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
-using namespace std;
-
 extern "C" {
 #endif
 
@@ -110,7 +198,7 @@ extern "C" {
 char* mkmshar_b64Encode(char *data, size_t inlen);
 
 /**
- * @brief strnlen function for mkmshar if using C90, uses strlen from string if the standard version is beyond C90.
+ * @brief strnlen function for mkmshar if not compiled on posix platforms, uses strlen from string if compiled on posix platforms.
  * 
  * @param str the string to checl
  * @param maxlen the maximum length of the string
@@ -139,6 +227,11 @@ int mkmshar_int_to_str(int x, char *buf, size_t size, int base, int uppercase);
  * This is not a standards compliant version, I just need a dumb one for C90.
  * Just do not use this even if you don't need elaborate flags like '%p' or '%z'.
  * 
+ * 
+ * @note You need to start and end the va_list manually.
+ * 
+ * @warning Not portable, I told you.
+ * 
  * Derived from https://codereview.stackexchange.com/questions/132860/my-own-snprintf-implementation-in-c
  * 
  * @param buf the buffer to be filled
@@ -150,9 +243,11 @@ int mkmshar_int_to_str(int x, char *buf, size_t size, int base, int uppercase);
 int mkmshar_dumbvsnprintf(char *buf, size_t size, const char *fmt, va_list ap);
 
 /**
- * @brief snprintf for mkmshar if using C90, uses snprintf from stdio if the standard version beyond C90.
+ * @brief snprintf for mkmshar if using C90, uses snprintf from stdio if the standard version beyond C90. 
+ * Not portable if C standard version is below C99.
  * 
- * mkmshar_dumbvsnprintf is why this function is not portable if the standard version is below C99.
+ * 
+ * @warning mkmshar_dumbvsnprintf is why this function is not portable if the standard version is below C99.
  * 
  * @param str the string to copy to
  * @param size how many bytes to copy
@@ -168,6 +263,8 @@ int mkmshar_snprintf(char *str, size_t size, const char *format, ...);
 
 /**
  * @brief Make an MShar archive
+ * 
+ * @note You may want to save your current locale because it will be changed to "C". This function will try to set it back to the old locale, but just save it just in case it doesn't (this is a bug, please report it).
  * @warning This function's return value must be manually freed if not null
  * 
  * @param prescript the script to run before extraction. Put NULL if empty and do not put the filename, put the content of the script you want to run (putting the filename will just place the filename, not the content)
@@ -216,6 +313,9 @@ char* mkmshar_s(char* prescript, char* postscript, char** files, size_t nfiles);
 
 char* mkmshar_b64Encode(char *data, size_t inlen)
 {
+    #if defined(__cplusplus) || defined(c_plusplus)
+    using namespace std;
+    #endif
     static const char b64e[] = {
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
         'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
@@ -267,18 +367,26 @@ char* mkmshar_b64Encode(char *data, size_t inlen)
 
 size_t mkmshar_strnlen(const char *s, size_t maxlen)
 {
-    #if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
+    #if defined(__cplusplus) || defined(c_plusplus)
+    using namespace std;
+    #endif
+
+    #if ((__STDC_VERSION__ >= 201112L) && defined(__STDC_LIB_EXT1__))
+        return strnlen_s(s, maxlen);
+    #else
     size_t len = 0;
     while (len < maxlen && s[len] != '\0') {
         len++;
     }
     return len;
-    #else
-    return strnlen(s, maxlen);
     #endif
 }
 
 int mkmshar_int_to_str(int x, char *buf, size_t size, int base, int uppercase) {
+    #if defined(__cplusplus) || defined(c_plusplus)
+    using namespace std;
+    #endif
+
     static const int INT_TO_STR_DIGITS_L[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
     static const int INT_TO_STR_DIGITS_U[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
@@ -310,6 +418,10 @@ int mkmshar_int_to_str(int x, char *buf, size_t size, int base, int uppercase) {
 int mkmshar_dumbvsnprintf(char *str, size_t size, const char *format, va_list arg_list) {
     /* dumb snprintf implemenration */
 
+    #if defined(__cplusplus) || defined(c_plusplus)
+    using namespace std;
+    #endif
+
     int chars_printed = 0;
     char c, *str_arg;
     int num, len, i;
@@ -317,7 +429,7 @@ int mkmshar_dumbvsnprintf(char *str, size_t size, const char *format, va_list ar
     size_t max_size = size;
 
     for (i = 0; format[i] != 0; i++) {
-        if (max_size - chars_printed <= 0) {
+        if ((max_size - chars_printed <= 0) && (size != 0)) {
             break;
         } else if (format[i] == '%') {
             i++;
@@ -347,7 +459,6 @@ int mkmshar_dumbvsnprintf(char *str, size_t size, const char *format, va_list ar
                 chars_printed += len;
                 break;
             default:
-                va_end(arg_list);
                 return -1;
             }
         } else {
@@ -363,12 +474,16 @@ int mkmshar_dumbvsnprintf(char *str, size_t size, const char *format, va_list ar
 
 int mkmshar_snprintf(char *str, size_t size, const char *format, ...)
 {
+    #if defined(__cplusplus) || defined(c_plusplus)
+    using namespace std;
+    #endif
+
     va_list arg_list;
     int chars_printed = 0;
     va_start(arg_list, format);
 
     /* check c standard version */
-    #if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
+    #if ((!defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)) || (defined(__STDC__) && !defined(__STDC_VERSION__)))
     chars_printed = mkmshar_dumbvsnprintf(str, size, format, arg_list);
     #else
     chars_printed = vsnprintf(str, size, format, arg_list);
@@ -379,13 +494,29 @@ int mkmshar_snprintf(char *str, size_t size, const char *format, ...)
 }
 
 char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, int ignorefileerrors){
+    #if defined(__cplusplus) || defined(c_plusplus)
+    using namespace std;
+    #endif
+
     static const size_t initarcfilesize = (((sizeof(char*) + sizeof(size_t)) * 1024) + 1);
+    const char* old_locale = setlocale(LC_ALL, NULL);
     size_t i;
 
     char* arcfile = (char*) MXPSQL_MShar_Calloc(initarcfilesize, initarcfilesize);
 
+    setlocale(LC_ALL, "C");
+
+    /* printf("dumb: %d", mkmshar_snprintf(NULL, 0, "dumb %s", "snprintf")); */
+
+    if(files == NULL){
+        MXPSQL_MShar_Free(arcfile);
+        setlocale(LC_ALL, old_locale);
+        return NULL;
+    }
+
     if(!arcfile){
         MXPSQL_MShar_Free(arcfile);
+        setlocale(LC_ALL, old_locale);
         return NULL;
     }
 
@@ -415,6 +546,7 @@ fi\n\
         if(strlen(prestr) + strlen(prestr2) + strlen(arcfile) > initarcfilesize){
             arcfile = (char*) MXPSQL_MShar_Realloc(arcfile, strlen(prestr) + strlen(prestr2) + strlen(arcfile));
             if(arcfile == NULL){
+                setlocale(LC_ALL, old_locale);
                 return NULL;
             }
         }
@@ -427,6 +559,7 @@ fi\n\
         if(strlen(arcfile) + strlen(arcfile) > strlen(arcfile)){
             arcfile = (char*) MXPSQL_MShar_Realloc(arcfile, strlen(arcfile) + strlen(prescript) + 1);
             if(arcfile == NULL){
+                setlocale(LC_ALL, old_locale);
                 return NULL;
             }
         }
@@ -435,25 +568,39 @@ fi\n\
 
     for(i = 0; i < nfiles; i++){
         size_t fsize = 0;
-        FILE* fptr = fopen(files[i], "rb");
+        FILE* fptr = NULL;
         char* filecontent = NULL;
+
+        if(files[i] == NULL) {
+            if(ignorefileerrors != 0){
+                continue;
+            } else {
+                MXPSQL_MShar_Free(arcfile);
+                setlocale(LC_ALL, old_locale);
+                return NULL;
+            }
+        }
+
+        fptr = fopen(files[i], "rb");
         if(fptr == NULL){
             if(ignorefileerrors != 0){
                 continue;
             }
             else{
                 MXPSQL_MShar_Free(arcfile);
+                setlocale(LC_ALL, old_locale);
                 return NULL;
             }
         }
 
-        if(ferror(fptr)){
+        if(ferror(fptr) != 0){
             if(ignorefileerrors != 0){
                 continue;
             }
             else{
                 fclose(fptr);
                 MXPSQL_MShar_Free(arcfile);
+                setlocale(LC_ALL, old_locale);
                 return NULL;
             }
         }
@@ -462,8 +609,23 @@ fi\n\
         {
             long int ifsize = 0;
 
-            while(fgetc(fptr) != EOF){;} /* this may seem hacky and unsophisticated, but it is portable and sophisticated due to C++ not mandating to implement SEEK_END just like the comment before. 
-            All you do is read until you reach EOF, then get the file size and return to beginning. */
+            while(fgetc(fptr) != EOF || ferror(fptr)){;} /* this may seem hacky and unsophisticated, but it is portable and sophisticated due to C++ not mandating to implement SEEK_END just like the comment before (no longer existing). 
+            All you do is read until you reach EOF, then get the file size and return to beginning. 
+            This will also return if an error occured.
+            */
+
+            if(ferror(fptr)){
+                if(ignorefileerrors != 0){
+                    continue;
+                }
+                else{
+                    fclose(fptr);
+                    MXPSQL_MShar_Free(arcfile);
+                    setlocale(LC_ALL, old_locale);
+                    return NULL;
+                }
+            }
+
             if(fseek(fptr, 0, SEEK_CUR) != 0){
                 if(ignorefileerrors != 0){
                     continue;
@@ -471,6 +633,7 @@ fi\n\
                 else{
                     fclose(fptr);
                     MXPSQL_MShar_Free(arcfile);
+                    setlocale(LC_ALL, old_locale);
                     return NULL;
                 }
             }
@@ -483,6 +646,7 @@ fi\n\
                 else{
                     fclose(fptr);
                     MXPSQL_MShar_Free(arcfile);
+                    setlocale(LC_ALL, old_locale);
                     return NULL;
                 }
             }
@@ -497,19 +661,21 @@ fi\n\
                 else{
                     fclose(fptr);
                     MXPSQL_MShar_Free(arcfile);
+                    setlocale(LC_ALL, old_locale);
                     return NULL;
                 }
             }
 
         }
 
-        if(ferror(fptr)){
+        if(ferror(fptr) != 0){
             if(ignorefileerrors != 0){
                 continue;
             }
             else{
                 fclose(fptr);
                 MXPSQL_MShar_Free(arcfile);
+                setlocale(LC_ALL, old_locale);
                 return NULL;
             }
         }
@@ -519,6 +685,7 @@ fi\n\
             MXPSQL_MShar_Free(arcfile);
             MXPSQL_MShar_Free(filecontent);
             fclose(fptr);
+            setlocale(LC_ALL, old_locale);
             return NULL;
         }
 
@@ -536,6 +703,7 @@ fi\n\
                 if(fileblock == NULL){
                     MXPSQL_MShar_Free(arcfile);
                     MXPSQL_MShar_Free(filecontent);
+                    setlocale(LC_ALL, old_locale);
                     return NULL;
                 }
 
@@ -557,6 +725,7 @@ fi\n\
                             MXPSQL_MShar_Free(arcfile);
                             MXPSQL_MShar_Free(filecontent);
                             MXPSQL_MShar_Free(fileblock);
+                            setlocale(LC_ALL, old_locale);
                             return NULL;
                         }
 
@@ -570,6 +739,7 @@ fi\n\
                         MXPSQL_MShar_Free(arcfile);
                         MXPSQL_MShar_Free(filecontent);
                         MXPSQL_MShar_Free(fileblock);
+                        setlocale(LC_ALL, old_locale);
                         return NULL;
                     }
 
@@ -579,6 +749,7 @@ fi\n\
                             MXPSQL_MShar_Free(arcfile);
                             MXPSQL_MShar_Free(filecontent);
                             MXPSQL_MShar_Free(fileblock);
+                            setlocale(LC_ALL, old_locale);
                             return NULL;
                         }
                     }
@@ -588,6 +759,7 @@ fi\n\
                         MXPSQL_MShar_Free(filecontent);
                         MXPSQL_MShar_Free(fileblock);
                         MXPSQL_MShar_Free(tektsrc);
+                        setlocale(LC_ALL, old_locale);
                         return NULL;
                     }
                     strcat(fileblock, tektsrc);
@@ -607,6 +779,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                             MXPSQL_MShar_Free(arcfile);
                             MXPSQL_MShar_Free(filecontent);
                             MXPSQL_MShar_Free(fileblock);
+                            setlocale(LC_ALL, old_locale);
                             return NULL;
                         }
                     }
@@ -622,6 +795,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                             MXPSQL_MShar_Free(arcfile);
                             MXPSQL_MShar_Free(filecontent);
                             MXPSQL_MShar_Free(fileblock);
+                            setlocale(LC_ALL, old_locale);
                             return NULL;
                         }
                     }
@@ -637,6 +811,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                             MXPSQL_MShar_Free(arcfile);
                             MXPSQL_MShar_Free(filecontent);
                             MXPSQL_MShar_Free(fileblock);
+                            setlocale(LC_ALL, old_locale);
                             return NULL;
                         }
                     }
@@ -654,6 +829,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                         MXPSQL_MShar_Free(arcfile);
                         MXPSQL_MShar_Free(filecontent);
                         MXPSQL_MShar_Free(fileblock);
+                        setlocale(LC_ALL, old_locale);
                         return NULL;
                     }
 
@@ -666,6 +842,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                             MXPSQL_MShar_Free(filecontent);
                             MXPSQL_MShar_Free(fileblock);
                             MXPSQL_MShar_Free(basprintf);
+                            setlocale(LC_ALL, old_locale);
                             return NULL;
                         }
                         strcat(bas64, "");
@@ -685,6 +862,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                             MXPSQL_MShar_Free(basprintf);
                             MXPSQL_MShar_Free(bas64);
                             if(ss != NULL) MXPSQL_MShar_Free(ss);
+                            setlocale(LC_ALL, old_locale);
                             return NULL;
                         }
 
@@ -700,6 +878,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                                 MXPSQL_MShar_Free(basprintf);
                                 MXPSQL_MShar_Free(bas64);
                                 if(ss != NULL) MXPSQL_MShar_Free(ss);
+                                setlocale(LC_ALL, old_locale);
                                 return NULL;
                             }
                         }
@@ -716,6 +895,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                                 MXPSQL_MShar_Free(basprintf);
                                 MXPSQL_MShar_Free(bas64);
                                 if(ss != NULL) MXPSQL_MShar_Free(ss);
+                                setlocale(LC_ALL, old_locale);
                                 return NULL;
                             }
                         }
@@ -735,6 +915,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                                 MXPSQL_MShar_Free(bas64);
                                 MXPSQL_MShar_Free(fmt);
                                 if(basprintf != NULL) MXPSQL_MShar_Free(basprintf);
+                                setlocale(LC_ALL, old_locale);
                                 return NULL;
                             }
                         }
@@ -750,6 +931,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                                 MXPSQL_MShar_Free(basprintf);
                                 MXPSQL_MShar_Free(bas64);
                                 if(fmt != NULL) MXPSQL_MShar_Free(fmt);
+                                setlocale(LC_ALL, old_locale);
                                 return NULL;
                             }
 
@@ -776,6 +958,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                                 MXPSQL_MShar_Free(filecontent);
                                 MXPSQL_MShar_Free(fileblock);
                                 MXPSQL_MShar_Free(basprintf);
+                                setlocale(LC_ALL, old_locale);
                                 return NULL;
                             }
                             strcat(bas64, "");
@@ -793,6 +976,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                             MXPSQL_MShar_Free(fileblock);
                             if(basprintf != NULL)MXPSQL_MShar_Free(basprintf);
                             if(fmt != NULL)MXPSQL_MShar_Free(fmt);
+                            setlocale(LC_ALL, old_locale);
                             return NULL;
                         }
 
@@ -808,6 +992,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                         MXPSQL_MShar_Free(basprintf);
                         MXPSQL_MShar_Free(bas64);
                         MXPSQL_MShar_Free(fmt);
+                        setlocale(LC_ALL, old_locale);
                         return NULL;
                     }
 
@@ -819,6 +1004,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                             MXPSQL_MShar_Free(fileblock);
                             MXPSQL_MShar_Free(basprintf);
                             MXPSQL_MShar_Free(bas64);
+                            setlocale(LC_ALL, old_locale);
                             return NULL;
                         }
                     }
@@ -843,6 +1029,7 @@ tmp=;\
                             MXPSQL_MShar_Free(arcfile);
                             MXPSQL_MShar_Free(filecontent);
                             MXPSQL_MShar_Free(fileblock);
+                            setlocale(LC_ALL, old_locale);
                             return NULL;
                         }
                     }
@@ -855,6 +1042,7 @@ tmp=;\
                         MXPSQL_MShar_Free(arcfile);
                         MXPSQL_MShar_Free(filecontent);
                         MXPSQL_MShar_Free(fileblock);
+                        setlocale(LC_ALL, old_locale);
                         return NULL;
                     }
                 }
@@ -869,7 +1057,8 @@ tmp=;\
         if(strlen(arcfile) + strlen(postscript) > strlen(arcfile)){
             arcfile = (char*) MXPSQL_MShar_Realloc(arcfile, strlen(arcfile) + strlen(postscript) + 1);
             if(arcfile == NULL){
-                MXPSQL_MShar_Free(arcfile);
+                if(arcfile != NULL) MXPSQL_MShar_Free(arcfile);
+                setlocale(LC_ALL, old_locale);
                 return NULL;
             }
         }
@@ -888,7 +1077,8 @@ exit 0;\
         if(strlen(poststr) + strlen(arcfile) > strlen(arcfile)){
             arcfile = (char*) MXPSQL_MShar_Realloc(arcfile, strlen(arcfile) + strlen(poststr) + 1);
             if(arcfile == NULL){
-                MXPSQL_MShar_Free(arcfile);
+                if(arcfile != NULL) MXPSQL_MShar_Free(arcfile);
+                setlocale(LC_ALL, old_locale);
                 return NULL;
             }
         }
@@ -896,6 +1086,7 @@ exit 0;\
         strcat(arcfile, poststr);
     }
 
+    setlocale(LC_ALL, old_locale);
     return (char*) arcfile;
 }
 
