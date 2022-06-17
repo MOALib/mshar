@@ -6,6 +6,42 @@
  * @version 0 (unscheduled release)
  * @date 2022-05-12
  * 
+ * @details
+ * Some are taken from b64 and the apple snprintf. Copyright notice of the snprintf.
+ * 
+ * Copyright (c) 2013, NLnet Labs. All rights reserved.
+ *
+ * This software is open source.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 
+ * Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * 
+ * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * 
+ * Neither the name of the NLNET LABS nor the names of its contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * 
+ * This Library also may consume a lot of memory and may cause a memory leak (sometimes will fail trying to archive large file).
+ * 
  * @copyright 
  * 
  * MIT License
@@ -62,6 +98,7 @@
 #include <cstring>
 #include <cstdarg>
 #include <clocale>
+#include <cerrno>
 #else
 #include <math.h>
 #include <stdio.h>
@@ -70,6 +107,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <locale.h>
+#include <errno.h>
 #endif
 
 /* All these to be used for later things, right now no use. */
@@ -197,6 +235,7 @@ extern "C" {
  */
 char* mkmshar_b64Encode(char *data, size_t inlen);
 
+
 /**
  * @brief strnlen function for mkmshar if not compiled on posix platforms, uses strlen from string if compiled on posix platforms.
  * 
@@ -206,17 +245,33 @@ char* mkmshar_b64Encode(char *data, size_t inlen);
  */
 size_t mkmshar_strnlen(const char *str, size_t maxlen);
 
-/**
- * @brief Back the int for mkmshar_snprintf if using C90, no use if the standard version is beyond C90.
+/** 
+ * @brief add padding to string 
+ * @details
+ * Derived from https://opensource.apple.com/source/network_cmds/network_cmds-511/unbound/compat/snprintf.c
  * 
- * @param x the integer to be converted
- * @param buf the buffer to be filled
- * @param size the size of the buffer
- * @param base the base of the integer
- * @param uppercase if true, the result will be uppercase
- * @return int the number of characters written
+ * Copyright notice is at top
+*/
+static void print_pad(char** at, size_t* left, int* ret, char p, int num);
+
+/**
+ * @brief print %s
+ * 
+ * @details
+ * Derived from https://opensource.apple.com/source/network_cmds/network_cmds-511/unbound/compat/snprintf.c
+ * 
+ * Copyright notice is at top 
+*/
+static void print_str(char** at, size_t* left, int* ret, char* s, int minw, int precision, int prgiven, int minus);
+
+/** 
+ * @brief print %c 
+ * @details
+ * Derived from https://opensource.apple.com/source/network_cmds/network_cmds-511/unbound/compat/snprintf.c
+ * 
+ * Copyright notice is at top
  */
-int mkmshar_int_to_str(int x, char *buf, size_t size, int base, int uppercase);
+static void print_char(char** at, size_t* left, int* ret, int c, int minw, int minus);
 
 /**
  * @brief A dumb (and potentially very dummy and gummy) version of vsnprintf that backs mkmshar_snprintf.  
@@ -225,14 +280,32 @@ int mkmshar_int_to_str(int x, char *buf, size_t size, int base, int uppercase);
  * Do not use this function for portability reasons (that is that it does not implement everything like '%p').
  * If if you need more elaborate format flags, go use a C standards compliant version.
  * This is not a standards compliant version, I just need a dumb one for C90.
- * Just do not use this even if you don't need elaborate flags like '%p' or '%z'.
+ * Just do not use this even if you don't need elaborate flags like '%p' or '%z', the list of supported flags are listed below.
  * 
+ * @param str string buffer for result. result will be null terminated.
+ * @param size size of the buffer. null is put inside buffer.
+ * @param format printf format string.
+ * @param arg '...' arguments to print.
+ * @returns number of characters. a null is printed after this.
+ * @return number of bytes that would have been written
+ *	   if the buffer had been large enough.
  * 
  * @note You need to start and end the va_list manually.
  * 
  * @warning Not portable, I told you.
  * 
- * Derived from https://codereview.stackexchange.com/questions/132860/my-own-snprintf-implementation-in-c
+ * @details
+ * Originally derived from https://codereview.stackexchange.com/questions/132860/my-own-snprintf-implementation-in-c
+ * 
+ * Now derived from https://opensource.apple.com/source/network_cmds/network_cmds-511/unbound/compat/snprintf.c
+ * 
+ * Copyright notice is at top
+ * 
+ * supported format specifiers:
+ * 	%s, %c, %n, %m.
+ * 	and %%.
+ * 
+ * Yeah, a small subset of the standard format specifiers, how cool and portable is that. Not cool and portable.
  * 
  * @param buf the buffer to be filled
  * @param size the size of the buffer
@@ -240,7 +313,7 @@ int mkmshar_int_to_str(int x, char *buf, size_t size, int base, int uppercase);
  * @param ap the variadic arguments list
  * @return int the number of characters written
  */
-int mkmshar_dumbvsnprintf(char *buf, size_t size, const char *fmt, va_list ap);
+int mkmshar_dumbvsnprintf(char* str, size_t size, const char* format, va_list arg);
 
 /**
  * @brief snprintf for mkmshar if using C90, uses snprintf from stdio if the standard version beyond C90. 
@@ -261,15 +334,21 @@ int mkmshar_dumbvsnprintf(char *buf, size_t size, const char *fmt, va_list ap);
  */
 int mkmshar_snprintf(char *str, size_t size, const char *format, ...);
 
+
 /**
  * @brief Make an MShar archive
  * 
- * @note You may want to save your current locale because it will be changed to "C". This function will try to set it back to the old locale, but just save it just in case it doesn't (this is a bug, please report it).
- * @warning This function's return value must be manually freed if not null
+ * @note You may want to save your current locale because it will be changed to "C". This function will try to set it back to the old locale, but just save it just in case it doesn't (this is a bug, please report it). 
+ * 
+ * Also you can't ignore memory allocation errors, those realloc spams are needed.
+ * 
+ * @warning This function's return value must be manually freed if not null.
+ * 
+ * Sometimes this function can fail if you try to archive big files (like the executable itself).
  * 
  * @param prescript the script to run before extraction. Put NULL if empty and do not put the filename, put the content of the script you want to run (putting the filename will just place the filename, not the content)
  * @param postscript the script to run after extraction. Put NULL if empty and do not put the filename, put the content of the script you want to run (putting the filename will just place the filename, not the content)
- * @param files the files to be archived
+ * @param files the files to be archived, retuning null will set the errno to EDOM and return NULL
  * @param nfiles how many files to archive
  * @param ignorefileerrors Ignore file errors and continue, set to 0 to not ignore
  * @return char* the archive or NULL if there is a problem (memory allocation failures, file errors or too big base64)
@@ -366,6 +445,7 @@ char* mkmshar_b64Encode(char *data, size_t inlen)
     return out;
 }
 
+
 size_t mkmshar_strnlen(const char *s, size_t maxlen)
 {
 
@@ -384,95 +464,179 @@ size_t mkmshar_strnlen(const char *s, size_t maxlen)
     #endif
 }
 
-int mkmshar_int_to_str(int x, char *buf, size_t size, int base, int uppercase) {
-
-    #if defined(__cplusplus) || defined(c_plusplus)
-    using namespace std;
-    #endif
-
-    static const int INT_TO_STR_DIGITS_L[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-    static const int INT_TO_STR_DIGITS_U[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
-    int length = (int)ceil(log((double)x)/log((double)base));
-    int r, i = 0;
-    char c;
-
-    if (size < ((size_t) length)) {
-        x /= (int)pow(base, (float)(length - size));
-        length = size;
-    }
-
-    do {
-        if (((size_t) i) >= size) break;
-        r = x % base;
-        if (uppercase) {
-            c = INT_TO_STR_DIGITS_U[r];
-        } else {
-            c = INT_TO_STR_DIGITS_L[r];
-        }
-        buf[length-i-1] = c;
-        x /= base;
-        i++;
-    } while (x != 0);
-
-    return i;
+static void
+print_pad(char** at, size_t* left, int* ret, char p, int num)
+{
+	while(num--) {
+		if(*left > 1) {
+			*(*at)++ = p;
+			(*left)--;
+		}
+		(*ret)++;
+	}
 }
 
-int mkmshar_dumbvsnprintf(char *str, size_t size, const char *format, va_list arg_list) {
-    /* dumb snprintf implemenration */
+static void
+spool_str(char** at, size_t* left, int* ret, const char* buf, int len)
+{
+	int i;
+	for(i=0; i<len; i++) {
+		if(*left > 1) {
+			*(*at)++ = buf[i];
+			(*left)--;
+		}
+		(*ret)++;
+	}
+}
 
-    #if defined(__cplusplus) || defined(c_plusplus)
-    using namespace std;
-    #endif
+static void
+print_str(char** at, size_t* left, int* ret, char* s,
+	int minw, int precision, int prgiven, int minus)
+{
+	int w;
+	/* with prec: no more than x characters from this string, stop at 0 */
+	if(prgiven)
+		w = mkmshar_strnlen(s, precision);
+	else	w = (int)strlen(s); /* up to the nul */
+	if(w < minw && !minus)
+		print_pad(at, left, ret, ' ', minw - w);
+	spool_str(at, left, ret, s, w);
+	if(w < minw && minus)
+		print_pad(at, left, ret, ' ', minw - w);
+}
 
-    int chars_printed = 0;
-    char c, *str_arg;
-    int num, len, i;
-    int uppercase = 0, base = 10;
-    size_t max_size = size;
+static void
+print_char(char** at, size_t* left, int* ret, int c,
+	int minw, int minus)
+{
+	if(1 < minw && !minus)
+		print_pad(at, left, ret, ' ', minw - 1);
+	print_pad(at, left, ret, c, 1);
+	if(1 < minw && minus)
+		print_pad(at, left, ret, ' ', minw - 1);
+}
 
-    for (i = 0; format[i] != 0; i++) {
-        if ((max_size - chars_printed <= 0) && (size != 0)) {
-            break;
-        } else if (format[i] == '%') {
-            i++;
-            switch (format[i]) {
-            case 'c':
-                c = va_arg(arg_list, int);
-                str[chars_printed++] = c;
-                break;
-            case '%':
-                str[chars_printed++] = '%';
-                break;
-            case 's':
-                str_arg = va_arg(arg_list, char *);
-                len = mkmshar_strnlen(str_arg, max_size - chars_printed);
-                strncpy(str+chars_printed, str_arg, len);
-                chars_printed += len;
-                break;
-            case 'H':
-                uppercase = 1;
-                continue;
-            case 'h':
-                base = 16;
-                continue;
-            case 'd':
-                num = va_arg(arg_list, int);
-                len = mkmshar_int_to_str(num, str+chars_printed, max_size - chars_printed, base, uppercase);
-                chars_printed += len;
-                break;
-            default:
-                return -1;
-            }
-        } else {
-            str[chars_printed++] = format[i];
-        }
-    }
+int mkmshar_dumbvsnprintf(char* str, size_t size, const char* format, va_list arg)
+{
+	char* at = str;
+	size_t left = size;
+	int ret = 0;
+	const char* fmt = format;
+	int conv, minw, precision, prgiven, minus;
+	while(*fmt) {
+		/* copy string before % */
+		while(*fmt && *fmt!='%') {
+			if(left > 1) {
+				*at++ = *fmt++;
+				left--;
+			} else fmt++;
+			ret++;
+		}
+		
+		/* see if we are at end */
+		if(!*fmt) break;
 
-    if (((size_t) chars_printed) == max_size) chars_printed--;
-    str[chars_printed] = 0;
+		/* fetch next argument % designation from format string */
+		fmt++; /* skip the '%' */
 
-    return chars_printed;
+		/********************************/
+		/* get the argument designation */
+		/********************************/
+		/* we must do this vararg stuff inside this function for
+		 * portability.  Hence, get_designation, and print_designation
+		 * are not their own functions. */
+
+		/* printout designation:
+		 * conversion specifier: x, d, u, s, c, n, m, p
+		 * flags: # not supported
+		 *        0 zeropad (on the left)
+		 *	  - left adjust (right by default)
+		 *	  ' ' printspace for positive number (in - position).
+		 *	  + alwayssign
+		 * fieldwidth: [1-9][0-9]* minimum field width.
+		 * 	if this is * then type int next argument specifies the minwidth.
+		 * 	if this is negative, the - flag is set (with positive width).
+		 * precision: period[digits]*, %.2x.
+		 * 	if this is * then type int next argument specifies the precision.
+		 *	just '.' or negative value means precision=0.
+		 *		this is mindigits to print for d, i, u, x
+		 *		this is aftercomma digits for f
+		 *		this is max number significant digits for g
+		 *		maxnumber characters to be printed for s
+		 * length: 0-none (int), 1-l (long), 2-ll (long long)
+		 * 	notsupported: hh (char), h (short), L (long double), q, j, z, t
+		 * Does not support %m$ and *m$ argument designation as array indices.
+		 * Does not support %#x
+		 *
+		 */
+		minw = 0;
+		precision = 1;
+		prgiven = 0;
+		minus = 0;
+
+		/* field width */
+		if(*fmt == '*') {
+			fmt++; /* skip char */
+			minw = va_arg(arg, int);
+			if(minw < 0) {
+				minus = 1;
+				minw = -minw;
+			}
+		} else while(*fmt >= '0' && *fmt <= '9') {
+			minw = minw*10 + (*fmt++)-'0';
+		}
+
+		/* precision */
+		if(*fmt == '.') {
+			fmt++; /* skip period */
+			prgiven = 1;
+			precision = 0;
+			if(*fmt == '*') {
+				fmt++; /* skip char */
+				precision = va_arg(arg, int);
+				if(precision < 0)
+					precision = 0;
+			} else while(*fmt >= '0' && *fmt <= '9') {
+				precision = precision*10 + (*fmt++)-'0';
+			}
+		}
+
+		/* get the conversion */
+		if(!*fmt) conv = 0;
+		else	conv = *fmt++;
+
+		/***********************************/
+		/* print that argument designation */
+		/***********************************/
+		switch(conv) {
+		case 's':
+			print_str(&at, &left, &ret, va_arg(arg, char*),
+				minw, precision, prgiven, minus);
+			break;
+		case 'c':
+			print_char(&at, &left, &ret, va_arg(arg, int),
+				minw, minus);
+			break;
+		case 'n':
+			*va_arg(arg, int*) = ret;
+			break;
+		case 'm':
+			print_str(&at, &left, &ret, strerror(errno),
+				minw, precision, prgiven, minus);
+			break;
+		case '%':
+			print_pad(&at, &left, &ret, '%', 1);
+			break;
+		/* unknown */
+		default:
+		case 0: break;
+		}
+	}
+
+	/* zero terminate */
+	if(left > 0)
+		*at = 0;
+	return ret;
 }
 
 int mkmshar_snprintf(char *str, size_t size, const char *format, ...)
@@ -496,6 +660,7 @@ int mkmshar_snprintf(char *str, size_t size, const char *format, ...)
     return chars_printed;
 }
 
+
 char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, int ignorefileerrors){
     
     #if defined(__cplusplus) || defined(c_plusplus)
@@ -514,6 +679,7 @@ char* mkmshar(char* prescript, char* postscript, char** files, size_t nfiles, in
 
     if(files == NULL){
         MXPSQL_MShar_Free(arcfile);
+        errno = EDOM;
         setlocale(LC_ALL, old_locale);
         return NULL;
     }
@@ -613,7 +779,7 @@ fi\n\
         {
             long int ifsize = 0;
 
-            while(fgetc(fptr) != EOF || ferror(fptr)){;} /* this may seem hacky and unsophisticated, but it is portable and sophisticated due to C++ not mandating to implement SEEK_END just like the comment before (no longer existing). 
+            while(fgetc(fptr) != EOF || ferror(fptr)){;} /* this may seem hacky, convoluted and unsophisticated, but it is portable and sophisticated due to C++ not mandating to implement SEEK_END just like the comment before (no longer existing). 
             All you do is read until you reach EOF, then get the file size and return to beginning. 
             This will also return if an error occured.
             */
@@ -768,7 +934,7 @@ fi\n\
                     }
                     strcat(fileblock, tektsrc);
 
-                    MXPSQL_MShar_Free(tektsrc);
+                    if(tektsrc != NULL) MXPSQL_MShar_Free(tektsrc);
                     MXPSQL_MShar_Free(tektfmt);
                 }
 
@@ -824,18 +990,12 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                 }
 
                 {
-                    size_t s = initarcfilesize;
+                    size_t s = 0;
 
-                    char* basprintf = (char*) MXPSQL_MShar_Calloc(s, s);
+                    /* char* basprintf = (char*) MXPSQL_MShar_Calloc(s, s); */
+                    char* basprintf = NULL;
                     char* fmt = NULL;
                     char* bas64 = NULL;
-                    if(basprintf == NULL){
-                        MXPSQL_MShar_Free(arcfile);
-                        MXPSQL_MShar_Free(filecontent);
-                        MXPSQL_MShar_Free(fileblock);
-                        setlocale(LC_ALL, old_locale);
-                        return NULL;
-                    }
 
                     bas64 = mkmshar_b64Encode(filecontent, fsize);
 
@@ -853,6 +1013,41 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                     }
 
                     {
+                        static const char* fmt1 = (char*) "printf '";
+                        static const char* fmtmid = (char*) "%%s";
+                        static const char* fmt2 = (char*) "' '%s' > \"./$TEKTONE\";\n";
+
+                            size_t fmtlen = strlen(fmt1) + strlen(fmtmid) + strlen(fmt2) + 1;
+                            fmt = (char*) MXPSQL_MShar_Calloc(fmtlen, fmtlen);
+
+                            if(fmt == NULL){
+                                MXPSQL_MShar_Free(arcfile);
+                                MXPSQL_MShar_Free(filecontent);
+                                MXPSQL_MShar_Free(fileblock);
+                                if(basprintf != NULL) MXPSQL_MShar_Free(basprintf);
+                                MXPSQL_MShar_Free(bas64);
+                                if(fmt != NULL) MXPSQL_MShar_Free(fmt);
+                                setlocale(LC_ALL, old_locale);
+                                return NULL;
+                            }
+
+                            strcat(fmt, fmt1);
+                            strcat(fmt, fmtmid);
+                            strcat(fmt, fmt2);
+                    }
+
+                    s = mkmshar_snprintf(NULL, 0, fmt, bas64);
+                    basprintf = (char*) MXPSQL_MShar_Calloc(s, s);
+                    if(basprintf == NULL){
+                        MXPSQL_MShar_Free(arcfile);
+                        MXPSQL_MShar_Free(fmt);
+                        MXPSQL_MShar_Free(filecontent);
+                        MXPSQL_MShar_Free(fileblock);
+                        setlocale(LC_ALL, old_locale);
+                        return NULL;
+                    }
+
+                    /* {
                         static const char* fmt1 = (char*) "printf '";
                         static const char* fmtmid = (char*) "%%s";
                         static const char* fmt2 = (char*) "' '%s' > \"./$TEKTONE\";\n";
@@ -943,7 +1138,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                             strcat(fmt, fmtmid);
                             strcat(fmt, fmt2);
                         }
-                    }
+                    } */
 
                     /* {
                         size_t sizy;
@@ -988,6 +1183,7 @@ mkdir \"$DIRNAME\" 2> /dev/null;\
                         strcat(fmt, "%s");
                         strcat(fmt, fmt2);
                     } */
+
 
                     if(mkmshar_snprintf(basprintf, s, fmt, bas64) < 0){
                         MXPSQL_MShar_Free(arcfile);

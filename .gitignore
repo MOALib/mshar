@@ -13,6 +13,13 @@ c/*.dylib
 c/*.dll
 c/*.dll
 
+c/test/*/*.exe
+c/test/*/*.dll
+c/test/*/*.so
+c/test/*/*.so.*
+c/test/*/*.dylib
+c/test/*/*.stackdump
+
 c/binding/src/
 c/binding/src/*
 

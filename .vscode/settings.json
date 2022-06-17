@@ -23,6 +23,7 @@
         "initializer_list": "c",
         "utility": "c",
         "__split_buffer": "c",
-        "queue": "c"
+        "queue": "c",
+        "errno.h": "c"
     }
 }

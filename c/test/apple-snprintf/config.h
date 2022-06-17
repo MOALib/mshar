@@ -1,0 +1,2 @@
+#define HAVE_STDINT_H 1
+#define SNPRINTF_TEST2 1

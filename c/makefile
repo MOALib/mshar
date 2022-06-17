@@ -1,5 +1,5 @@
 CSTANDARD=c90
-CFLAGS=-g -Og -ansi -std=$(CSTANDARD) -Wall -Werror -Wextra -Wpedantic -pedantic -pedantic-errors -fdiagnostics-color -pipe
+CFLAGS=-g -ggdb -static-libgcc -Og -ansi -std=$(CSTANDARD) -Wall -Werror -Wextra -Wpedantic -pedantic -pedantic-errors -fdiagnostics-color -pipe
 CSHARED=-shared -fPIC -Wl,-soname,libmshar.so
 
 CC=gcc
@@ -10,6 +10,7 @@ MSHARC=mshar.c
 MSHARLIB=msharlib.c
 
 MSHAR_BIN=./mshar.exe
+MSHAR_BIN_NATIVE=./msharn.exe
 LIBMSHAR_NOEND=./libmshar
 LIBMSHAR_WIN=$(LIBMSHAR_NOEND).dll
 LIBMSHAR=$(LIBMSHAR_NOEND).so
@@ -34,6 +35,7 @@ build: app windllso dllso
 
 app:
 	$(CC) $(MSHARC) $(CFLAGS) -o $(MSHAR_BIN)
+	$(MINGWCC) $(MSHARC) $(CFLAGS) -o $(MSHAR_BIN_NATIVE)
 
 windllso:
 	$(MINGWCC) $(MSHARLIB) $(CFLAGS) $(CSHARED) -o $(LIBMSHAR_WIN)
@@ -68,7 +70,10 @@ execclean: cls
 	@-rm $(LIBMSHAR) $(LIBMSHAR_WIN) $(LIBMSHAR_WIN64) 2> /dev/null || true
 
 	@echo "cleaning binaries"
-	@-rm $(MSHAR_BIN) 2> /dev/null || true
+	@-rm $(MSHAR_BIN) $(MSHAR_BIN_NATIVE) 2> /dev/null || true
+
+	@echo "Cleaning stack dumps"
+	@-rm -rf *.stackdump 2> /dev/null || true
 
 	@echo "Delegating to $(BIND_DIR) makefile"
 	@cd $(BIND_DIR) && make clean
