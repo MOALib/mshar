@@ -181,7 +181,7 @@
 #endif
 
 #ifndef __STDC__
-#error "MShar requires an ANSI C compiler"
+/* #error "MShar requires an ANSI C compiler" */
 #endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
